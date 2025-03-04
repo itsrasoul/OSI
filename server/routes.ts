@@ -14,7 +14,20 @@ const UPLOAD_DIR = './uploads';
 const THUMBNAIL_DIR = './uploads/thumbnails';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_FILES_PER_CASE = 10;
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg', 
+  'image/png', 
+  'image/gif', 
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain',
+  'application/rtf',
+  'text/csv',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+];
 const THUMBNAIL_SIZE = 200;
 
 // Rate limiting configuration
@@ -28,6 +41,7 @@ async function ensureDirectories() {
   try {
     await fs.mkdir(UPLOAD_DIR, { recursive: true });
     await fs.mkdir(THUMBNAIL_DIR, { recursive: true });
+    await fs.mkdir('./uploads/cases', { recursive: true });
   } catch (err) {
     console.error('Failed to create upload directories:', err);
     process.exit(1);
@@ -50,7 +64,7 @@ const upload = multer({
     if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type. Only images are allowed.'));
+      cb(new Error('Invalid file type. Only allowed file types are supported.'));
     }
   },
   limits: {
@@ -89,9 +103,6 @@ async function cleanupFiles(files: string[]) {
 ensureDirectories();
 
 export async function registerRoutes(app: Express) {
-  // Ensure uploads directory exists
-  await fs.mkdir('./uploads/cases', { recursive: true });
-
   // Cases endpoints
   app.get("/api/cases", async (_req, res) => {
     const cases = await dbStorage.getCases();
@@ -279,6 +290,80 @@ export async function registerRoutes(app: Express) {
     const imageUrl = `/uploads/cases/${file.filename}`;
     const updatedCase = await dbStorage.updateCase(id, { imageUrl });
     res.json(updatedCase);
+  });
+
+  // Document handling endpoints
+  app.get("/api/cases/:id/documents", async (req, res) => {
+    const caseId = parseInt(req.params.id);
+    const documents = await dbStorage.getCaseDocuments(caseId);
+    res.json(documents);
+  });
+
+  app.post("/api/cases/documents/upload", limiter, upload.single('document'), async (req, res) => {
+    const filesToCleanup: string[] = [];
+    
+    try {
+      const file = req.file;
+      const caseId = parseInt(req.body.caseId);
+
+      if (!file || !caseId) {
+        throw new Error("Missing file or case ID");
+      }
+
+      // Check number of existing documents for this case
+      const existingDocuments = await dbStorage.getCaseDocuments(caseId);
+      if (existingDocuments.length >= MAX_FILES_PER_CASE) {
+        throw new Error(`Maximum number of files (${MAX_FILES_PER_CASE}) reached for this case`);
+      }
+
+      filesToCleanup.push(file.path);
+
+      // Create document record
+      const document = await dbStorage.createCaseDocument({
+        caseId,
+        fileName: file.filename,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        url: `/uploads/${file.filename}`,
+        description: req.body.description || ''
+      });
+
+      // Clear cleanup list since files were successfully saved
+      filesToCleanup.length = 0;
+      
+      res.json(document);
+    } catch (error) {
+      // Clean up any uploaded files if there was an error
+      await cleanupFiles(filesToCleanup);
+
+      console.error('Document upload error:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : 'Upload failed' });
+    }
+  });
+
+  app.delete("/api/cases/documents/:id", async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      const document = await dbStorage.getCaseDocument(documentId);
+      
+      if (!document) {
+        res.status(404).json({ message: "Document not found" });
+        return;
+      }
+
+      // Delete the file from the filesystem
+      try {
+        await fs.unlink(path.join(process.cwd(), 'public', document.url));
+      } catch (e) {
+        console.error('Failed to delete document file:', e);
+      }
+
+      await dbStorage.deleteDocument(documentId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Document deletion error:', error);
+      res.status(500).json({ message: 'Failed to delete document' });
+    }
   });
 
   // Serve uploaded files

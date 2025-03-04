@@ -15,6 +15,9 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ImageGallery } from "./image-gallery";
+import { DocumentGallery } from "./document-gallery";
+import { AddressMap } from "./address-map";
+import { useState } from "react";
 
 interface InfoFormProps {
   caseId: number;
@@ -29,6 +32,8 @@ type FormData = {
 
 export default function InfoForm({ caseId, category }: InfoFormProps) {
   const { toast } = useToast();
+  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  
   const form = useForm<FormData>({
     defaultValues: {
       source: "",
@@ -38,13 +43,16 @@ export default function InfoForm({ caseId, category }: InfoFormProps) {
 
   const createInfo = useMutation({
     mutationFn: async (values: FormData) => {
-      const data = category in infoTypes ? values.data : { content: values.rawText };
+      const data = category in infoTypes ? {
+        ...values.data,
+        ...(selectedLocation && { coordinates: `${selectedLocation.lat},${selectedLocation.lng}` })
+      } : { content: values.rawText };
+      
       const info: InsertCaseInfo = {
         caseId,
         category,
         data,
         source: values.source,
-        // Set verification status based on source presence
         verificationStatus: values.source ? 'verified' : 'unverified'
       };
 
@@ -55,17 +63,38 @@ export default function InfoForm({ caseId, category }: InfoFormProps) {
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${caseId}/info`] });
       toast({ title: "Information added successfully" });
       form.reset();
+      setSelectedLocation(null);
     },
   });
 
-  // If category is images, render the ImageGallery component
+  // If category is images or documents, render the appropriate gallery component
   if (category === "images") {
     return <ImageGallery caseId={caseId} />;
+  }
+  
+  if (category === "documents") {
+    return <DocumentGallery caseId={caseId} />;
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit((data) => createInfo.mutate(data))} className="space-y-4">
+        {category === "addresses" && (
+          <div className="space-y-2">
+            <FormLabel>Location</FormLabel>
+            <AddressMap
+              onLocationSelect={(lat, lng) => setSelectedLocation({ lat, lng })}
+              initialLocation={selectedLocation || undefined}
+              className="mb-4"
+            />
+            {selectedLocation && (
+              <p className="text-sm text-muted-foreground">
+                Selected coordinates: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}
+              </p>
+            )}
+          </div>
+        )}
+        
         {category in infoTypes ? (
           // Render structured form fields for categories with predefined fields
           <>

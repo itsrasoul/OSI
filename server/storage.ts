@@ -1,7 +1,8 @@
 import { 
   cases, type Case, type InsertCase,
   caseInfo, type CaseInfo, type InsertCaseInfo,
-  caseImages, type CaseImage, type InsertCaseImage 
+  caseImages, type CaseImage, type InsertCaseImage,
+  caseDocuments, type CaseDocument, type InsertCaseDocument
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -23,6 +24,12 @@ export interface IStorage {
   getCaseImage(id: number): Promise<CaseImage | undefined>;
   createCaseImage(image: InsertCaseImage): Promise<CaseImage>;
   deleteImage(id: number): Promise<void>;
+
+  // Case document operations
+  getCaseDocuments(caseId: number): Promise<CaseDocument[]>;
+  getCaseDocument(id: number): Promise<CaseDocument | undefined>;
+  createCaseDocument(document: InsertCaseDocument): Promise<CaseDocument>;
+  deleteDocument(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -151,6 +158,51 @@ export class DatabaseStorage implements IStorage {
       throw new Error("Invalid image ID");
     }
     await db.delete(caseImages).where(eq(caseImages.id, id));
+  }
+
+  async getCaseDocuments(caseId: number): Promise<CaseDocument[]> {
+    if (!Number.isInteger(caseId) || caseId < 1) {
+      return [];
+    }
+    return db
+      .select()
+      .from(caseDocuments)
+      .where(eq(caseDocuments.caseId, caseId))
+      .orderBy(caseDocuments.uploadedAt);
+  }
+
+  async getCaseDocument(id: number): Promise<CaseDocument | undefined> {
+    if (!Number.isInteger(id) || id < 1) {
+      return undefined;
+    }
+    const [document] = await db
+      .select()
+      .from(caseDocuments)
+      .where(eq(caseDocuments.id, id));
+    return document;
+  }
+
+  async createCaseDocument(document: InsertCaseDocument): Promise<CaseDocument> {
+    if (!Number.isInteger(document.caseId) || document.caseId < 1) {
+      throw new Error("Invalid case ID");
+    }
+
+    const [newDocument] = await db
+      .insert(caseDocuments)
+      .values({
+        ...document,
+        uploadedAt: new Date().toISOString()
+      })
+      .returning();
+
+    return newDocument;
+  }
+
+  async deleteDocument(id: number): Promise<void> {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error("Invalid document ID");
+    }
+    await db.delete(caseDocuments).where(eq(caseDocuments.id, id));
   }
 }
 
