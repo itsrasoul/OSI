@@ -13,7 +13,8 @@ import {
   ResponsiveContainer,
   Legend
 } from "recharts";
-import { CaseInfo } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
+import { CaseInfo, Case } from "@shared/schema";
 import { 
   FileText, 
   AlertCircle, 
@@ -39,10 +40,20 @@ interface CaseDashboardProps {
 }
 
 export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
+  // Fetch all cases to get stats
+  const { data: cases } = useQuery<Case[]>({
+    queryKey: ['/api/cases']
+  });
+
+  // Calculate case statistics
+  const activeCases = cases?.filter(c => c.status === 'active').length || 0;
+  const pendingReview = cases?.filter(c => c.status === 'pending').length || 0;
+  const totalCases = cases?.length || 0;
+
   // Calculate total information coverage percentage
   const calculateProgress = () => {
     if (!caseInfo?.length) return 0;
-    const totalPossibleFields = 20; // Assuming this is the max fields we expect
+    const totalPossibleFields = 20; // Maximum expected fields
     const uniqueCategories = new Set(caseInfo.map(info => info.category));
     return Math.min((uniqueCategories.size / totalPossibleFields) * 100, 100);
   };
@@ -123,7 +134,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active Cases</p>
-                <h3 className="text-2xl font-bold">12</h3>
+                <h3 className="text-2xl font-bold">{activeCases}</h3>
               </div>
             </div>
           </CardContent>
@@ -137,7 +148,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending Review</p>
-                <h3 className="text-2xl font-bold">5</h3>
+                <h3 className="text-2xl font-bold">{pendingReview}</h3>
               </div>
             </div>
           </CardContent>
@@ -151,7 +162,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Cases</p>
-                <h3 className="text-2xl font-bold">17</h3>
+                <h3 className="text-2xl font-bold">{totalCases}</h3>
               </div>
             </div>
           </CardContent>
