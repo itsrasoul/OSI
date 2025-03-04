@@ -4,9 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,6 +16,7 @@ import {
 import { CaseInfo } from "@shared/schema";
 import { 
   FileText, 
+  AlertCircle, 
   Users, 
   Globe, 
   Building2, 
@@ -27,16 +27,26 @@ import {
   PersonStanding,
   Mail,
   Network,
-  FileSearch
+  FileSearch,
+  CheckCircle2,
+  AlertOctagon,
+  Clock
 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 interface CaseDashboardProps {
   caseInfo?: CaseInfo[];
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-
 export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
+  // Calculate total information coverage percentage
+  const calculateProgress = () => {
+    if (!caseInfo?.length) return 0;
+    const totalPossibleFields = 20; // Assuming this is the max fields we expect
+    const uniqueCategories = new Set(caseInfo.map(info => info.category));
+    return Math.min((uniqueCategories.size / totalPossibleFields) * 100, 100);
+  };
+
   // Prepare data for visualizations
   const categoryCounts = caseInfo?.reduce((acc, info) => {
     acc[info.category] = (acc[info.category] || 0) + 1;
@@ -48,14 +58,16 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
     count
   }));
 
-  const confidenceCounts = caseInfo?.reduce((acc, info) => {
-    acc[info.confidence] = (acc[info.confidence] || 0) + 1;
+  // Prepare timeline data for the line chart
+  const timelineData = caseInfo?.reduce((acc, info) => {
+    const date = new Date(info.timestamp).toLocaleDateString();
+    acc[date] = (acc[date] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  const pieData = Object.entries(confidenceCounts || {}).map(([confidence, count]) => ({
-    name: confidence,
-    value: count
+  const lineChartData = Object.entries(timelineData || {}).map(([date, count]) => ({
+    date,
+    findings: count
   }));
 
   const categoryIcons: Record<string, any> = {
@@ -70,6 +82,8 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
     connections: Network,
     search_results: FileSearch
   };
+
+  const progressPercentage = calculateProgress();
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -92,119 +106,143 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
     }
   };
 
-  const getConfidenceColor = (confidence: string) => {
-    switch (confidence) {
-      case 'high':
-        return 'text-green-500';
-      case 'medium':
-        return 'text-yellow-500';
-      case 'low':
-        return 'text-red-500';
-      default:
-        return 'text-blue-500';
-    }
-  };
-
   return (
     <motion.div
-      className="grid gap-6 md:grid-cols-2"
+      className="grid gap-6"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      {/* Data Statistics */}
-      <motion.div variants={itemVariants} className="md:col-span-2">
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Category Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Information Categories
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis 
-                      dataKey="category" 
-                      angle={-45}
-                      textAnchor="end"
-                      height={100}
-                      interval={0}
-                      tick={{ fontSize: 12 }}
-                    />
-                    <YAxis />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))'
-                      }}
-                    />
-                    <Bar 
-                      dataKey="count" 
-                      fill="hsl(var(--primary))"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
+      {/* Summary Statistics */}
+      <motion.div variants={itemVariants} className="grid gap-6 md:grid-cols-3">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full p-3 bg-blue-500/10">
+                <CheckCircle2 className="h-6 w-6 text-blue-500" />
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <p className="text-sm text-muted-foreground">Active Cases</p>
+                <h3 className="text-2xl font-bold">12</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Confidence Distribution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Confidence Levels
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => 
-                        `${name} ${(percent * 100).toFixed(0)}%`
-                      }
-                    >
-                      {pieData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={COLORS[index % COLORS.length]} 
-                        />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))'
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full p-3 bg-yellow-500/10">
+                <AlertOctagon className="h-6 w-6 text-yellow-500" />
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Pending Review</p>
+                <h3 className="text-2xl font-bold">5</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full p-3 bg-green-500/10">
+                <Clock className="h-6 w-6 text-green-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Cases</p>
+                <h3 className="text-2xl font-bold">17</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      {/* Progress and Charts */}
+      <motion.div variants={itemVariants} className="grid gap-6 md:grid-cols-2">
+        {/* Investigation Progress */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Investigation Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium">Target Information Coverage</span>
+                  <span className="text-sm text-muted-foreground">{progressPercentage.toFixed(0)}%</span>
+                </div>
+                <Progress value={progressPercentage} className="h-2" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(categoryCounts || {}).map(([category, count], index) => (
+                  <motion.div
+                    key={category}
+                    className="flex items-center gap-2"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm capitalize">{category.replace(/_/g, " ")}</span>
+                    <span className="text-sm text-muted-foreground ml-auto">{count}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Findings Timeline */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Investigation Timeline
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={lineChartData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                  <XAxis 
+                    dataKey="date" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    interval={0}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="findings" 
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    dot={{ fill: "hsl(var(--primary))" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Recent Activity Timeline */}
-      <motion.div variants={itemVariants} className="md:col-span-2">
+      <motion.div variants={itemVariants}>
         <Card>
           <CardHeader>
-            <CardTitle>Investigation Timeline</CardTitle>
+            <CardTitle>Recent Activities</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-8">
@@ -226,9 +264,6 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
                         {info.category.replace(/_/g, " ")}
                       </p>
                       <div className="flex items-center gap-2">
-                        <Badge variant="secondary" className={`text-xs ${getConfidenceColor(info.confidence)}`}>
-                          {info.confidence}
-                        </Badge>
                         <Badge variant="outline" className="text-xs">
                           {info.verificationStatus}
                         </Badge>
