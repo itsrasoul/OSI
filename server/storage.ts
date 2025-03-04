@@ -20,7 +20,9 @@ export interface IStorage {
 
   // Case image operations
   getCaseImages(caseId: number): Promise<CaseImage[]>;
+  getCaseImage(id: number): Promise<CaseImage | undefined>;
   createCaseImage(image: InsertCaseImage): Promise<CaseImage>;
+  deleteImage(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -112,6 +114,17 @@ export class DatabaseStorage implements IStorage {
       .orderBy(caseImages.uploadedAt);
   }
 
+  async getCaseImage(id: number): Promise<CaseImage | undefined> {
+    if (!Number.isInteger(id) || id < 1) {
+      return undefined;
+    }
+    const [image] = await db
+      .select()
+      .from(caseImages)
+      .where(eq(caseImages.id, id));
+    return image;
+  }
+
   async createCaseImage(image: InsertCaseImage): Promise<CaseImage> {
     if (!Number.isInteger(image.caseId) || image.caseId < 1) {
       throw new Error("Invalid case ID");
@@ -125,6 +138,13 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return newImage;
+  }
+
+  async deleteImage(id: number): Promise<void> {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error("Invalid image ID");
+    }
+    await db.delete(caseImages).where(eq(caseImages.id, id));
   }
 }
 

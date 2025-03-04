@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ImageGallery } from "./image-gallery";
 
 interface InfoFormProps {
   caseId: number;
@@ -56,6 +57,11 @@ export default function InfoForm({ caseId, category }: InfoFormProps) {
       form.reset();
     },
   });
+
+  // If category is images, render the ImageGallery component
+  if (category === "images") {
+    return <ImageGallery caseId={caseId} />;
+  }
 
   return (
     <Form {...form}>
