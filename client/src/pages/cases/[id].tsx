@@ -10,7 +10,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { FileText, AlertCircle, Users, Globe, Calendar, Search } from "lucide-react";
+import {
+  FileText,
+  AlertCircle,
+  Users,
+  Globe,
+  Building,
+  Search
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -43,11 +50,11 @@ export default function CaseDetail() {
     };
   }, []);
 
-  const { data: case_ } = useQuery<Case>({ 
+  const { data: case_ } = useQuery<Case>({
     queryKey: [`/api/cases/${id}`]
   });
 
-  const { data: caseInfo } = useQuery<CaseInfo[]>({ 
+  const { data: caseInfo } = useQuery<CaseInfo[]>({
     queryKey: [`/api/cases/${id}/info`]
   });
 
@@ -78,7 +85,10 @@ export default function CaseDetail() {
         { name: 'LinkedIn', url: `https://linkedin.com/in/${usernamePattern}` },
         { name: 'GitHub', url: `https://github.com/${usernamePattern}` },
         { name: 'Instagram', url: `https://instagram.com/${usernamePattern}` },
-        { name: 'Facebook', url: `https://facebook.com/${usernamePattern}` }
+        { name: 'Facebook', url: `https://facebook.com/${usernamePattern}` },
+        { name: 'TikTok', url: `https://tiktok.com/@${usernamePattern}` },
+        { name: 'Reddit', url: `https://reddit.com/user/${usernamePattern}` },
+        { name: 'YouTube', url: `https://youtube.com/@${usernamePattern}` }
       ];
 
       findings.push({
@@ -93,23 +103,32 @@ export default function CaseDetail() {
 
       // Domain Analysis
       if (searchTerm.includes('.')) {
-        try {
-          const response = await fetch(`https://dns.google/resolve?name=${encodeURIComponent(searchTerm)}`);
-          const data = await response.json();
-          if (data.Answer) {
-            findings.push({
-              category: "domains",
-              data: {
-                domain: searchTerm,
-                ip_addresses: data.Answer.map((a: any) => a.data).join(', '),
-                source: "DNS Records"
-              }
-            });
+        findings.push({
+          category: "domains",
+          data: {
+            domain: searchTerm,
+            whois: `https://who.is/whois/${searchTerm}`,
+            dns: `https://dns-lookup.com/${searchTerm}`,
+            source: "Domain Records"
           }
-        } catch (error) {
-          console.error("DNS lookup failed:", error);
-        }
+        });
       }
+
+      // Public Records Search
+      findings.push({
+        category: "search_results",
+        data: {
+          source: "Public Records",
+          links: [
+            `https://search.brave.com/search?q=${encodeURIComponent(searchTerm)}`,
+            `https://duckduckgo.com/?q=${encodeURIComponent(searchTerm)}`,
+            `https://yandex.com/search/?text=${encodeURIComponent(searchTerm)}`,
+            `https://archive.org/search?query=${encodeURIComponent(searchTerm)}`
+          ].join('\n'),
+          news: `https://news.google.com/search?q=${encodeURIComponent(searchTerm)}`,
+          images: `https://images.google.com/search?q=${encodeURIComponent(searchTerm)}`
+        }
+      });
 
       setSearchResults(findings);
 
@@ -126,13 +145,13 @@ export default function CaseDetail() {
       }
 
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${id}/info`] });
-      toast({ 
-        title: "Search Complete", 
-        description: `Found information across ${findings.length} categories` 
+      toast({
+        title: "Search Complete",
+        description: `Found information across ${findings.length} categories`
       });
     } catch (error) {
-      toast({ 
-        title: "Search Failed", 
+      toast({
+        title: "Search Failed",
         description: "Error gathering information",
         variant: "destructive"
       });
@@ -147,8 +166,8 @@ export default function CaseDetail() {
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Badge variant={info.confidence === "high" ? "default" : 
-                        info.confidence === "medium" ? "secondary" : 
+          <Badge variant={info.confidence === "high" ? "default" :
+                        info.confidence === "medium" ? "secondary" :
                         "destructive"}>
             {info.confidence}
           </Badge>
@@ -194,14 +213,14 @@ export default function CaseDetail() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="space-y-6"
       variants={pageVariants}
       initial="initial"
       animate="animate"
       exit="exit"
     >
-      <motion.div 
+      <motion.div
         className="border-b pb-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -217,7 +236,7 @@ export default function CaseDetail() {
         <p className="text-muted-foreground mt-2">{case_?.description}</p>
       </motion.div>
 
-      <motion.div 
+      <motion.div
         className="max-w-2xl mx-auto space-y-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -236,7 +255,7 @@ export default function CaseDetail() {
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
-              <Button 
+              <Button
                 onClick={handleSearch}
                 disabled={!searchTerm.trim() || isSearching}
                 className="min-w-[100px]"
@@ -343,8 +362,8 @@ export default function CaseDetail() {
                     {searchResults
                       .filter(result => result.category === "social_media")
                       .map((result, index) => (
-                        <motion.div 
-                          key={index} 
+                        <motion.div
+                          key={index}
                           className="space-y-2"
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -352,14 +371,14 @@ export default function CaseDetail() {
                         >
                           <div className="whitespace-pre-wrap text-sm">
                             {result.data.profiles?.split('\n').map((profile: string, i: number) => (
-                              <motion.div 
-                                key={i} 
+                              <motion.div
+                                key={i}
                                 className="flex items-center gap-2 py-1"
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: i * 0.05 }}
                               >
-                                <a 
+                                <a
                                   href={profile.split(': ')[1]}
                                   target="_blank"
                                   rel="noopener noreferrer"
@@ -389,7 +408,7 @@ export default function CaseDetail() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
+                  <Building className="h-5 w-5" />
                   Additional Information
                 </CardTitle>
               </CardHeader>
@@ -412,8 +431,8 @@ export default function CaseDetail() {
                               </h3>
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 {Object.entries(result.data).map(([key, value]) => (
-                                  <motion.div 
-                                    key={key} 
+                                  <motion.div
+                                    key={key}
                                     className="flex gap-2"
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
