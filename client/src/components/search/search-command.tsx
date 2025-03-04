@@ -8,6 +8,7 @@ import {
   CommandList,
   CommandSeparator,
 } from "@/components/ui/command";
+import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -109,6 +110,12 @@ export default function SearchCommand({ caseId, onResultFound }: SearchCommandPr
         Search target information... <kbd className="ml-auto">⌘K</kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
+        <div className="sr-only">
+          <DialogTitle>Search Intelligence</DialogTitle>
+          <DialogDescription>
+            Search and analyze intelligence data across multiple sources
+          </DialogDescription>
+        </div>
         <CommandInput 
           placeholder="Enter target identifier (name, email, username...)" 
           value={searchTerm}
