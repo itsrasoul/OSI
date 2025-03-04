@@ -15,7 +15,7 @@ function Router() {
       <Sidebar />
       <div className="flex-1 flex flex-col">
         <ScrollArea className="flex-1">
-          <main className="container mx-auto max-w-[1800px] p-4 md:p-6 lg:p-8">
+          <main className="w-full min-h-screen max-w-[2000px] mx-auto p-4 md:p-6 lg:p-8 xl:p-10">
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/cases" component={CasesList} />
