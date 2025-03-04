@@ -655,29 +655,22 @@ export default function CaseDetail() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
-          className="overflow-hidden"
         >
           <Tabs defaultValue={categories[0]} className="space-y-6">
-            <div className="relative">
-              <ScrollArea className="w-full" orientation="horizontal">
-                <TabsList className="inline-flex w-max p-1 gap-2">
-                  {categories.map((category) => (
-                    <TabsTrigger 
-                      key={category} 
-                      value={category} 
-                      className="min-w-[150px] capitalize whitespace-nowrap data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      {category.replace(/_/g, " ")}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </ScrollArea>
-            </div>
+            <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+              <TabsList className="w-full p-1">
+                {categories.map((category) => (
+                  <TabsTrigger key={category} value={category} className="capitalize">
+                    {category.replace(/_/g, " ")}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </ScrollArea>
 
             {categories.map((category) => (
-              <TabsContent key={category} value={category} className="mt-6 min-h-[500px]">
-                <div className="grid gap-6 xl:grid-cols-2">
-                  <Card className="xl:sticky xl:top-0 h-fit">
+              <TabsContent key={category} value={category}>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <Card>
                     <CardHeader>
                       <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
@@ -686,38 +679,36 @@ export default function CaseDetail() {
                     </CardContent>
                   </Card>
 
-                  <Card className="h-fit">
+                  <Card>
                     <CardHeader>
                       <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-[calc(100vh-24rem)]">
-                        <div className="pr-4">
-                          {caseInfo?.filter(info => info.category === category).length === 0 ? (
-                            <div className="flex items-center justify-center h-32 text-muted-foreground">
-                              <AlertCircle className="h-4 w-4 mr-2" />
-                              No information found
-                            </div>
-                          ) : (
-                            <div className="space-y-4">
-                              {caseInfo
-                                ?.filter((info) => info.category === category)
-                                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                                .map((info) => (
-                                  <motion.div
-                                    key={info.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.1 }}
-                                  >
-                                    <Card className="p-4">
-                                      {renderInfoData(info)}
-                                    </Card>
-                                  </motion.div>
-                                ))}
-                            </div>
-                          )}
-                        </div>
+                      <ScrollArea className="h-[600px] pr-4">
+                        {caseInfo?.filter(info => info.category === category).length === 0 ? (
+                          <div className="flex items-center justify-center h-32 text-muted-foreground">
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            No information found
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {caseInfo
+                              ?.filter((info) => info.category === category)
+                              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                              .map((info) => (
+                                <motion.div
+                                  key={info.id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.1 }}
+                                >
+                                  <Card className="p-4">
+                                    {renderInfoData(info)}
+                                  </Card>
+                                </motion.div>
+                              ))}
+                          </div>
+                        )}
                       </ScrollArea>
                     </CardContent>
                   </Card>
