@@ -658,20 +658,26 @@ export default function CaseDetail() {
           className="overflow-hidden"
         >
           <Tabs defaultValue={categories[0]} className="space-y-6">
-            <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-              <TabsList className="w-full p-1">
-                {categories.map((category) => (
-                  <TabsTrigger key={category} value={category} className="capitalize">
-                    {category.replace(/_/g, " ")}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </ScrollArea>
+            <div className="relative">
+              <ScrollArea className="w-full">
+                <TabsList className="inline-flex w-max border-b p-1 gap-2">
+                  {categories.map((category) => (
+                    <TabsTrigger 
+                      key={category} 
+                      value={category} 
+                      className="min-w-[150px] capitalize whitespace-nowrap"
+                    >
+                      {category.replace(/_/g, " ")}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </ScrollArea>
+            </div>
 
             {categories.map((category) => (
-              <TabsContent key={category} value={category} className="mt-6">
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <Card>
+              <TabsContent key={category} value={category} className="mt-6 min-h-[500px]">
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <Card className="h-fit">
                     <CardHeader>
                       <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
@@ -680,12 +686,12 @@ export default function CaseDetail() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="h-fit">
                     <CardHeader>
                       <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
+                      <div className="max-h-[calc(100vh-24rem)] overflow-y-auto pr-4">
                         {caseInfo?.filter(info => info.category === category).length === 0 ? (
                           <div className="flex items-center justify-center h-32 text-muted-foreground">
                             <AlertCircle className="h-4 w-4 mr-2" />
@@ -710,7 +716,7 @@ export default function CaseDetail() {
                               ))}
                           </div>
                         )}
-                      </ScrollArea>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>
