@@ -10,12 +10,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { FileText, AlertCircle, Users, Building2, Globe, Calendar } from "lucide-react";
+import { FileText, AlertCircle, Users, Globe, Calendar, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import SearchCommand from "@/components/search/search-command";
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -142,22 +141,15 @@ export default function CaseDetail() {
     }
   };
 
-  const getConfidenceBadge = (confidence: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      high: "default",
-      medium: "secondary",
-      low: "destructive"
-    };
-    return variants[confidence] || "default";
-  };
-
   const renderInfoData = (info: CaseInfo) => {
     if (!info.data) return null;
 
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <Badge variant={getConfidenceBadge(info.confidence)}>
+          <Badge variant={info.confidence === "high" ? "default" : 
+                        info.confidence === "medium" ? "secondary" : 
+                        "destructive"}>
             {info.confidence}
           </Badge>
           {info.verificationStatus && (
@@ -231,10 +223,37 @@ export default function CaseDetail() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        {/* Command Palette */}
-        <SearchCommand caseId={caseId} onResultFound={(category, data) => {
-          setSearchResults(prev => [...prev, { category, data }]);
-        }} />
+        <Card className="border-2 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Enter name, email, username, domain, or any identifier..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <Button 
+                onClick={handleSearch}
+                disabled={!searchTerm.trim() || isSearching}
+                className="min-w-[100px]"
+              >
+                {isSearching ? "Searching..." : "Search"}
+              </Button>
+            </div>
+
+            {activeSearch && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                <span>Analyzing information for: </span>
+                <Badge variant="secondary">{activeSearch}</Badge>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Google Custom Search Results */}
         <Card>
@@ -352,7 +371,7 @@ export default function CaseDetail() {
                             ))}
                           </div>
                         </motion.div>
-                    ))}
+                      ))}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -410,7 +429,7 @@ export default function CaseDetail() {
                             </div>
                           </Card>
                         </motion.div>
-                    ))}
+                      ))}
                   </div>
                 </ScrollArea>
               </CardContent>

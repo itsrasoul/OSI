@@ -71,7 +71,7 @@ export default function SearchCommand({ caseId, onResultFound }: SearchCommandPr
           break;
         case "employment":
           data = {
-            company: "Scanning employment history...",
+            company: "Scanning company affiliations...",
             position: "Analyzing career progression...",
             location: "Mapping professional locations...",
             linkedin_url: "Identifying professional networks..."
