@@ -79,7 +79,7 @@ export function ImageGallery({ caseId }: ImageGalleryProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center gap-4">
         <Input
           type="file"
@@ -102,17 +102,17 @@ export function ImageGallery({ caseId }: ImageGalleryProps) {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
         {images?.map((image, index) => (
           <motion.div
             key={image.id}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: index * 0.1 }}
-            className="relative group"
+            className="relative group p-2"
           >
             <div
-              className="w-[200px] h-[200px] rounded-lg border bg-muted/50 flex items-center justify-center cursor-pointer overflow-hidden"
+              className="w-full aspect-square rounded-lg border bg-muted/50 flex items-center justify-center cursor-pointer overflow-hidden hover:shadow-lg transition-shadow"
               onClick={() => setSelectedImage(image)}
             >
               {image.thumbnail ? (
@@ -128,7 +128,7 @@ export function ImageGallery({ caseId }: ImageGalleryProps) {
             <Button
               variant="destructive"
               size="icon"
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={() => deleteImage.mutate(image.id)}
               disabled={deleteImage.isPending}
             >
