@@ -23,6 +23,19 @@ export const caseInfo = pgTable("case_info", {
   timestamp: text("timestamp").notNull(),
 });
 
+// New table for storing case images
+export const caseImages = pgTable("case_images", {
+  id: serial("id").primaryKey(),
+  caseId: integer("case_id").notNull(),
+  fileName: text("file_name").notNull(),
+  fileSize: integer("file_size").notNull(),
+  mimeType: text("mime_type").notNull(),
+  url: text("url").notNull(),
+  thumbnail: text("thumbnail").notNull(),
+  description: text("description"),
+  uploadedAt: text("uploaded_at").notNull(),
+});
+
 export const insertCaseSchema = createInsertSchema(cases)
   .omit({ createdAt: true, updatedAt: true });
 
@@ -32,10 +45,15 @@ export const insertCaseInfoSchema = createInsertSchema(caseInfo)
     data: z.unknown(),
   });
 
+export const insertCaseImageSchema = createInsertSchema(caseImages)
+  .omit({ uploadedAt: true });
+
 export type InsertCase = z.infer<typeof insertCaseSchema>;
 export type Case = typeof cases.$inferSelect;
 export type InsertCaseInfo = z.infer<typeof insertCaseInfoSchema>;
 export type CaseInfo = typeof caseInfo.$inferSelect;
+export type InsertCaseImage = z.infer<typeof insertCaseImageSchema>;
+export type CaseImage = typeof caseImages.$inferSelect;
 
 export const categories = [
   "personal_info",

@@ -1,6 +1,7 @@
 import { 
   cases, type Case, type InsertCase,
-  caseInfo, type CaseInfo, type InsertCaseInfo 
+  caseInfo, type CaseInfo, type InsertCaseInfo,
+  caseImages, type CaseImage, type InsertCaseImage 
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -16,6 +17,10 @@ export interface IStorage {
   // Case info operations
   getCaseInfo(caseId: number): Promise<CaseInfo[]>;
   createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo>;
+
+  // Case image operations
+  getCaseImages(caseId: number): Promise<CaseImage[]>;
+  createCaseImage(image: InsertCaseImage): Promise<CaseImage>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -94,6 +99,32 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return newInfo;
+  }
+
+  async getCaseImages(caseId: number): Promise<CaseImage[]> {
+    if (!Number.isInteger(caseId) || caseId < 1) {
+      return [];
+    }
+    return db
+      .select()
+      .from(caseImages)
+      .where(eq(caseImages.caseId, caseId))
+      .orderBy(caseImages.uploadedAt);
+  }
+
+  async createCaseImage(image: InsertCaseImage): Promise<CaseImage> {
+    if (!Number.isInteger(image.caseId) || image.caseId < 1) {
+      throw new Error("Invalid case ID");
+    }
+
+    const [newImage] = await db
+      .insert(caseImages)
+      .values({
+        ...image,
+        uploadedAt: new Date().toISOString(),
+      })
+      .returning();
+    return newImage;
   }
 }
 
