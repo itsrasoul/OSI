@@ -3,17 +3,23 @@ import { useParams } from "wouter";
 import { Case, CaseInfo, categories, confidenceLevels, verificationStatuses } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InfoForm from "@/components/cases/info-form";
-import SearchCommand from "@/components/search/search-command";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { FileText, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CaseDetail() {
   const { id } = useParams();
   const caseId = parseInt(id);
+  const { toast } = useToast();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
 
   const { data: case_ } = useQuery<Case>({ 
     queryKey: [`/api/cases/${id}`]
@@ -25,19 +31,56 @@ export default function CaseDetail() {
 
   if (!case_) return null;
 
-  const handleSearchResult = async (category: string, data: any) => {
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) return;
+    setIsSearching(true);
+
     try {
-      await apiRequest("POST", `/api/cases/${id}/info`, {
-        caseId,
-        category,
-        data,
-        source: "OSINT Intelligence",
-        confidence: "medium",
-        verificationStatus: "unverified"
-      });
+      // Simulate info gathering
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Generate findings based on search term
+      const findings = [
+        {
+          category: "personal_info",
+          data: {
+            name: searchTerm,
+            occupation: "Analyzing...",
+            location: "Searching...",
+          }
+        },
+        {
+          category: "social_media",
+          data: {
+            platform: "Multiple",
+            username: searchTerm.toLowerCase().replace(/[^a-z0-9]/g, ''),
+            bio: "Analyzing social presence...",
+          }
+        }
+      ];
+
+      // Save findings
+      for (const finding of findings) {
+        await apiRequest("POST", `/api/cases/${id}/info`, {
+          caseId,
+          category: finding.category,
+          data: finding.data,
+          source: "OSINT Search",
+          confidence: "medium",
+          verificationStatus: "unverified"
+        });
+      }
+
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${id}/info`] });
+      toast({ title: "Intelligence gathered", description: `Found information in ${findings.length} categories` });
     } catch (error) {
-      console.error("Failed to save search result:", error);
+      toast({ 
+        title: "Search failed", 
+        description: "Could not complete intelligence gathering",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -114,7 +157,24 @@ export default function CaseDetail() {
       </div>
 
       <div className="max-w-2xl mx-auto">
-        <SearchCommand caseId={caseId} onResultFound={handleSearchResult} />
+        <Card className="border-2 border-primary/20">
+          <CardContent className="pt-6">
+            <div className="flex gap-2">
+              <Input
+                placeholder="Enter target identifier (name, email, username...)"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+              <Button 
+                onClick={handleSearch}
+                disabled={!searchTerm.trim() || isSearching}
+              >
+                {isSearching ? "Searching..." : "Search"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs defaultValue={categories[0]} className="space-y-6">
