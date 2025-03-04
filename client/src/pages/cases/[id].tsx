@@ -655,6 +655,7 @@ export default function CaseDetail() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
+          className="overflow-hidden"
         >
           <Tabs defaultValue={categories[0]} className="space-y-6">
             <ScrollArea className="w-full whitespace-nowrap rounded-md border">
@@ -668,7 +669,7 @@ export default function CaseDetail() {
             </ScrollArea>
 
             {categories.map((category) => (
-              <TabsContent key={category} value={category}>
+              <TabsContent key={category} value={category} className="mt-6">
                 <div className="grid gap-6 lg:grid-cols-2">
                   <Card>
                     <CardHeader>
@@ -684,7 +685,7 @@ export default function CaseDetail() {
                       <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-[600px] pr-4">
+                      <ScrollArea className="h-[calc(100vh-20rem)] pr-4">
                         {caseInfo?.filter(info => info.category === category).length === 0 ? (
                           <div className="flex items-center justify-center h-32 text-muted-foreground">
                             <AlertCircle className="h-4 w-4 mr-2" />
