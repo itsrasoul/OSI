@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { FileText, AlertCircle, Users, Building2 } from "lucide-react";
+import { FileText, AlertCircle, Users, Building2, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -231,9 +231,58 @@ export default function CaseDetail() {
         {/* Google Custom Search Results */}
         <Card>
           <CardHeader>
-            <CardTitle>Web Search Results</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Live Google Search
+            </CardTitle>
           </CardHeader>
           <CardContent>
+            <style>{`
+              /* Dark theme styles for Google Custom Search */
+              .gsc-control-cse {
+                background-color: transparent !important;
+                border: none !important;
+              }
+              .gsc-input-box {
+                background: hsl(var(--background)) !important;
+                border-color: hsl(var(--border)) !important;
+              }
+              .gsc-input {
+                color: hsl(var(--foreground)) !important;
+              }
+              .gsc-completion-container {
+                background: hsl(var(--background)) !important;
+                border-color: hsl(var(--border)) !important;
+              }
+              .gsc-completion-title {
+                color: hsl(var(--foreground)) !important;
+              }
+              .gsc-result {
+                background-color: transparent !important;
+              }
+              .gs-title {
+                color: hsl(var(--primary)) !important;
+              }
+              .gs-snippet {
+                color: hsl(var(--muted-foreground)) !important;
+              }
+              .gsc-url-top {
+                color: hsl(var(--muted-foreground)) !important;
+              }
+              .gsc-table-result {
+                background-color: transparent !important;
+              }
+              .gsc-cursor-page {
+                color: hsl(var(--foreground)) !important;
+              }
+              .gsc-cursor-current-page {
+                color: hsl(var(--primary)) !important;
+              }
+              .gsc-search-button-v2 {
+                background-color: hsl(var(--primary)) !important;
+                border-color: hsl(var(--primary)) !important;
+              }
+            `}</style>
             <div className="gcse-search" data-gname="web-results"></div>
           </CardContent>
         </Card>
@@ -269,7 +318,7 @@ export default function CaseDetail() {
                           ))}
                         </div>
                       </div>
-                  ))}
+                    ))}
                 </div>
               </ScrollArea>
             </CardContent>
@@ -308,7 +357,7 @@ export default function CaseDetail() {
                           </div>
                         </div>
                       </Card>
-                  ))}
+                    ))}
                 </div>
               </ScrollArea>
             </CardContent>
