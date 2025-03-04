@@ -266,7 +266,7 @@ export default function CaseDetail() {
       exit="exit"
     >
       <motion.div
-        className="border-b pb-4 sticky top-0 bg-background z-50 mb-6"
+        className="border-b pb-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -657,15 +657,15 @@ export default function CaseDetail() {
           transition={{ delay: 0.6 }}
           className="overflow-hidden"
         >
-          <Tabs defaultValue={categories[0]} className="w-full space-y-6">
-            <div className="w-full border-b sticky top-0 bg-background z-10">
-              <ScrollArea className="w-full" orientation="horizontal">
-                <TabsList className="inline-flex h-14 w-max px-4">
+          <Tabs defaultValue={categories[0]} className="space-y-6">
+            <div className="relative">
+              <ScrollArea className="w-full">
+                <TabsList className="inline-flex w-max border-b p-1 gap-2">
                   {categories.map((category) => (
                     <TabsTrigger 
                       key={category} 
                       value={category} 
-                      className="min-w-[180px] px-8 capitalize whitespace-nowrap text-base"
+                      className="min-w-[150px] capitalize whitespace-nowrap"
                     >
                       {category.replace(/_/g, " ")}
                     </TabsTrigger>
@@ -675,9 +675,9 @@ export default function CaseDetail() {
             </div>
 
             {categories.map((category) => (
-              <TabsContent key={category} value={category} className="mt-6 min-h-[500px] w-full max-w-full">
-                <div className="grid gap-6 xl:grid-cols-2 w-full">
-                  <Card className="h-fit w-full">
+              <TabsContent key={category} value={category} className="mt-6 min-h-[500px]">
+                <div className="grid gap-6 xl:grid-cols-2">
+                  <Card className="h-fit">
                     <CardHeader>
                       <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
@@ -686,7 +686,7 @@ export default function CaseDetail() {
                     </CardContent>
                   </Card>
 
-                  <Card className="h-fit w-full">
+                  <Card className="h-fit">
                     <CardHeader>
                       <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
