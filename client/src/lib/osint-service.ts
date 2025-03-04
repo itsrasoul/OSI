@@ -2,14 +2,38 @@ import { apiRequest } from './queryClient';
 
 interface HunterResponse {
   data: {
-    email: string;
-    score: number;
-    position: string;
-    company: string;
-    linkedin?: string;
-    twitter?: string;
-    phone_number?: string;
-  }[];
+    domain: string;
+    disposition: string;
+    pattern: string;
+    organization: string;
+    emails: Array<{
+      value: string;
+      type: string;
+      confidence: number;
+      sources: Array<{
+        domain: string;
+        uri: string;
+        extracted_on: string;
+      }>;
+      first_name: string | null;
+      last_name: string | null;
+      position: string | null;
+      seniority: string | null;
+      department: string | null;
+      linkedin: string | null;
+      twitter: string | null;
+      phone_number: string | null;
+    }>;
+  };
+  meta: {
+    results: number;
+    limit: number;
+    offset: number;
+    params: {
+      company: string;
+      domain: string;
+    };
+  };
 }
 
 export async function searchPerson(query: string) {
@@ -19,69 +43,83 @@ export async function searchPerson(query: string) {
     const domain = isEmail ? query.split('@')[1] : '';
     const name = isEmail ? query.split('@')[0] : query;
 
-    // Use Hunter.io API to gather information
-    const hunterResponse = await fetch(
-      `https://api.hunter.io/v2/domain-search?domain=${domain || ''}&company=${name}&api_key=${process.env.HUNTER_API_KEY}`
-    );
-    const hunterData: HunterResponse = await hunterResponse.json();
-
-    const findings = [];
-
-    // Process personal information
-    findings.push({
-      category: "personal_info",
-      data: {
-        name: name,
-        occupation: hunterData.data?.[0]?.position || "Not found",
-        company: hunterData.data?.[0]?.company || "Not found",
+    // Make Hunter.io API call
+    const hunterUrl = `https://api.hunter.io/v2/domain-search?${domain ? `domain=${domain}` : `company=${encodeURIComponent(name)}`}`;
+    const response = await fetch(hunterUrl, {
+      headers: {
+        'Authorization': `Bearer ${process.env.HUNTER_API_KEY}`
       }
     });
 
-    // Process professional information
-    if (hunterData.data?.length > 0) {
+    if (!response.ok) {
+      throw new Error(`Hunter.io API error: ${response.status}`);
+    }
+
+    const hunterData = await response.json() as HunterResponse;
+    const findings = [];
+
+    // Process organization information if available
+    if (hunterData.data?.organization) {
       findings.push({
-        category: "employment",
+        category: "personal_info",
         data: {
-          company: hunterData.data[0].company,
-          position: hunterData.data[0].position,
-          linkedin_url: hunterData.data[0].linkedin || "Not found",
+          name: name,
+          organization: hunterData.data.organization,
+          domain: hunterData.data.domain || 'Not found',
         }
       });
     }
 
-    // Process social media information
-    if (hunterData.data?.[0]) {
-      const socialData = {
-        platform: "Multiple",
-        linkedin: hunterData.data[0].linkedin,
-        twitter: hunterData.data[0].twitter,
-      };
+    // Process email findings
+    if (hunterData.data?.emails?.length > 0) {
+      const emailFindings = hunterData.data.emails.map(email => ({
+        position: email.position,
+        confidence: email.confidence,
+        linkedin: email.linkedin,
+        twitter: email.twitter,
+        department: email.department,
+        seniority: email.seniority
+      })).filter(data => Object.values(data).some(value => value !== null));
 
-      findings.push({
-        category: "social_media",
-        data: socialData
-      });
+      if (emailFindings.length > 0) {
+        findings.push({
+          category: "employment",
+          data: {
+            company: hunterData.data.organization,
+            position: emailFindings[0].position || 'Not found',
+            seniority: emailFindings[0].seniority || 'Not found',
+            department: emailFindings[0].department || 'Not found'
+          }
+        });
+
+        findings.push({
+          category: "social_media",
+          data: {
+            platform: "Multiple",
+            linkedin: emailFindings[0].linkedin || 'Not found',
+            twitter: emailFindings[0].twitter || 'Not found',
+            confidence: `${emailFindings[0].confidence}%`
+          }
+        });
+      }
     }
 
-    // Additional web search
-    try {
-      const searchResults = await performWebSearch(query);
+    // If no results found, add a general search result
+    if (findings.length === 0) {
       findings.push({
         category: "search_results",
         data: {
-          search_engine: "Web Search",
           query: query,
-          results: searchResults
+          status: "No direct matches found",
+          suggestion: "Try refining your search terms or using a company domain"
         }
       });
-    } catch (error) {
-      console.error("Web search failed:", error);
     }
 
     return findings;
   } catch (error) {
     console.error("OSINT search failed:", error);
-    throw error;
+    throw new Error("Failed to gather intelligence data");
   }
 }
 
