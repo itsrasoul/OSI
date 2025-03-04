@@ -2,12 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Case } from "@shared/schema";
+import { Case, CaseInfo } from "@shared/schema";
 import { motion } from "framer-motion";
 import CaseDashboard from "@/components/cases/case-dashboard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus } from "lucide-react";
-import { CaseInfo } from "@shared/schema";
 
 export default function Home() {
   const { data: cases } = useQuery<Case[]>({ 
@@ -42,7 +41,7 @@ export default function Home() {
       <ScrollArea className="h-[calc(100vh-12rem)]">
         <div className="space-y-8 pr-4">
           {/* Main Dashboard */}
-          <CaseDashboard caseInfo={allCaseInfo || []} cases={cases || []} />
+          <CaseDashboard caseInfo={[...(cases || []), ...(allCaseInfo || [])]} />
 
           {/* Recent Cases */}
           <Card>
