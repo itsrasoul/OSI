@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -13,6 +14,7 @@ import {
   FormField,
   FormItem,
   FormLabel,
+  FormDescription,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +36,7 @@ export default function CaseForm({ open, onOpenChange }: CaseFormProps) {
       name: "",
       description: "",
       status: "active",
+      priority: "medium",
     },
   });
 
@@ -44,7 +47,7 @@ export default function CaseForm({ open, onOpenChange }: CaseFormProps) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/cases"] });
-      toast({ title: "Case created successfully" });
+      toast({ title: "Investigation created successfully" });
       form.reset();
       onOpenChange(false);
     },
@@ -54,7 +57,10 @@ export default function CaseForm({ open, onOpenChange }: CaseFormProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Case</DialogTitle>
+          <DialogTitle>New Investigation</DialogTitle>
+          <DialogDescription>
+            Create a new OSI investigation. Add details about your intelligence gathering target.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
@@ -65,8 +71,11 @@ export default function CaseForm({ open, onOpenChange }: CaseFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Name</FormLabel>
+                  <FormDescription>
+                    Enter a descriptive name for this investigation
+                  </FormDescription>
                   <FormControl>
-                    <Input {...field} />
+                    <Input placeholder="Investigation name" {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -78,15 +87,21 @@ export default function CaseForm({ open, onOpenChange }: CaseFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Description</FormLabel>
+                  <FormDescription>
+                    Provide details about the investigation scope and objectives
+                  </FormDescription>
                   <FormControl>
-                    <Textarea {...field} />
+                    <Textarea 
+                      placeholder="Investigation details and objectives..."
+                      {...field} 
+                    />
                   </FormControl>
                 </FormItem>
               )}
             />
 
             <Button type="submit" className="w-full" disabled={createCase.isPending}>
-              Create Case
+              {createCase.isPending ? "Creating..." : "Create Investigation"}
             </Button>
           </form>
         </Form>
