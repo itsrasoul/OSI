@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { Case, CaseInfo, categories } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InfoForm from "@/components/cases/info-form";
@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import CaseControls from "@/components/cases/case-controls";
-import ScrollBar from "@/components/ui/scroll-bar"; // Assuming this component exists
+import ScrollBar from "@/components/ui/scroll-bar";
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -40,7 +40,18 @@ export default function CaseDetail() {
   const [searchResults, setSearchResults] = useState<Array<{category: string, data: any}>>([]);
   const [activeSearch, setActiveSearch] = useState<string | null>(null);
 
-  // Initialize Google Custom Search Element
+  if (isNaN(caseId) || caseId < 1) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold text-red-500">Invalid Case ID</h1>
+        <p className="mt-2 text-muted-foreground">The requested case could not be found.</p>
+        <Button asChild>
+          <Link href="/cases">Back to Cases</Link>
+        </Button>
+      </div>
+    );
+  }
+
   useEffect(() => {
     const script = document.createElement('script');
     script.src = "https://cse.google.com/cse.js?cx=d3a5507656c25422a";
@@ -68,7 +79,6 @@ export default function CaseDetail() {
     try {
       const findings = [];
 
-      // Email Analysis
       if (searchTerm.includes('@')) {
         findings.push({
           category: "personal_info",
@@ -85,7 +95,6 @@ export default function CaseDetail() {
         });
       }
 
-      // Username Analysis
       const usernamePattern = searchTerm.toLowerCase().replace(/[^a-z0-9]/g, '');
       const socialPlatforms = [
         { name: 'Twitter', url: `https://twitter.com/${usernamePattern}` },
@@ -112,7 +121,6 @@ export default function CaseDetail() {
         }
       });
 
-      // Domain Analysis
       if (searchTerm.includes('.')) {
         findings.push({
           category: "domains",
@@ -134,7 +142,6 @@ export default function CaseDetail() {
         });
       }
 
-      // Public Records Search
       findings.push({
         category: "search_results",
         data: {
@@ -160,7 +167,6 @@ export default function CaseDetail() {
         }
       });
 
-      // Business Intelligence
       if (searchTerm.length > 2) {
         findings.push({
           category: "employment",
@@ -178,7 +184,6 @@ export default function CaseDetail() {
 
       setSearchResults(findings);
 
-      // Save findings
       for (const finding of findings) {
         await apiRequest("POST", `/api/cases/${id}/info`, {
           caseId,
@@ -325,7 +330,6 @@ export default function CaseDetail() {
           </CardContent>
         </Card>
 
-        {/* Google Custom Search Results */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -384,7 +388,6 @@ export default function CaseDetail() {
           </CardContent>
         </Card>
 
-        {/* Investigation Dashboard */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -393,7 +396,6 @@ export default function CaseDetail() {
           <CaseDashboard caseInfo={caseInfo} />
         </motion.div>
 
-        {/* Social Media Results */}
         {searchResults.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -449,7 +451,6 @@ export default function CaseDetail() {
           </motion.div>
         )}
 
-        {/* Additional Info - Enhanced */}
         {searchResults.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -457,7 +458,6 @@ export default function CaseDetail() {
             transition={{ delay: 0.5 }}
           >
             <div className="grid gap-4">
-              {/* Domain Information */}
               {searchResults.some(r => r.category === "domains") && (
                 <Card>
                   <CardHeader>
@@ -505,7 +505,6 @@ export default function CaseDetail() {
                 </Card>
               )}
 
-              {/* Business Information */}
               {searchResults.some(r => r.category === "employment") && (
                 <Card>
                   <CardHeader>
@@ -553,7 +552,6 @@ export default function CaseDetail() {
                 </Card>
               )}
 
-              {/* Search Results */}
               {searchResults.some(r => r.category === "search_results") && (
                 <Card>
                   <CardHeader>
@@ -574,7 +572,6 @@ export default function CaseDetail() {
                             transition={{ delay: index * 0.1 }}
                             className="space-y-6"
                           >
-                            {/* General Search */}
                             <div className="space-y-2">
                               <h3 className="text-sm font-medium text-muted-foreground">
                                 General Search
@@ -597,7 +594,6 @@ export default function CaseDetail() {
                               </div>
                             </div>
 
-                            {/* News Search */}
                             <div className="space-y-2">
                               <h3 className="text-sm font-medium text-muted-foreground">
                                 News Search
@@ -620,7 +616,6 @@ export default function CaseDetail() {
                               </div>
                             </div>
 
-                            {/* Document Search */}
                             <div className="space-y-2">
                               <h3 className="text-sm font-medium text-muted-foreground">
                                 Document Search
@@ -663,9 +658,9 @@ export default function CaseDetail() {
               <ScrollArea className="w-full whitespace-nowrap rounded-md border" style={{ overflowX: 'auto' }}>
                 <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted text-muted-foreground w-full p-2">
                   {categories.map((category) => (
-                    <TabsTrigger 
-                      key={category} 
-                      value={category} 
+                    <TabsTrigger
+                      key={category}
+                      value={category}
                       className="inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm capitalize px-4 py-2"
                     >
                       {category.replace(/_/g, " ")}

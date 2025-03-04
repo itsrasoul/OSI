@@ -2,6 +2,8 @@ import {
   cases, type Case, type InsertCase,
   caseInfo, type CaseInfo, type InsertCaseInfo 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Case operations
@@ -16,91 +18,83 @@ export interface IStorage {
   createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo>;
 }
 
-export class MemStorage implements IStorage {
-  private cases: Map<number, Case>;
-  private caseInfo: Map<number, CaseInfo[]>;
-  private currentCaseId: number;
-  private currentInfoId: number;
-
-  constructor() {
-    this.cases = new Map();
-    this.caseInfo = new Map();
-    this.currentCaseId = 1;
-    this.currentInfoId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async getCases(): Promise<Case[]> {
-    return Array.from(this.cases.values());
+    return db.select().from(cases);
   }
 
   async getCase(id: number): Promise<Case | undefined> {
-    return this.cases.get(id);
+    if (!Number.isInteger(id) || id < 1) {
+      return undefined;
+    }
+    const [case_] = await db.select().from(cases).where(eq(cases.id, id));
+    return case_;
   }
 
   async createCase(caseData: InsertCase): Promise<Case> {
-    const id = this.currentCaseId++;
     const timestamp = new Date().toISOString();
-
-    const newCase: Case = {
-      id,
-      name: caseData.name,
-      description: caseData.description || "",
-      status: caseData.status || "active",
-      priority: caseData.priority || "medium",
-      createdAt: timestamp,
-      updatedAt: timestamp
-    };
-
-    this.cases.set(id, newCase);
-    this.caseInfo.set(id, []);
+    const [newCase] = await db
+      .insert(cases)
+      .values({
+        ...caseData,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      })
+      .returning();
     return newCase;
   }
 
   async updateCase(id: number, data: Partial<Case>): Promise<Case> {
-    const existingCase = this.cases.get(id);
-    if (!existingCase) {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error("Invalid case ID");
+    }
+    const [updatedCase] = await db
+      .update(cases)
+      .set({
+        ...data,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(cases.id, id))
+      .returning();
+
+    if (!updatedCase) {
       throw new Error("Case not found");
     }
-
-    const updatedCase: Case = {
-      ...existingCase,
-      ...data,
-      updatedAt: new Date().toISOString()
-    };
-
-    this.cases.set(id, updatedCase);
     return updatedCase;
   }
 
   async deleteCase(id: number): Promise<void> {
-    this.cases.delete(id);
-    this.caseInfo.delete(id);
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error("Invalid case ID");
+    }
+    await db.delete(cases).where(eq(cases.id, id));
   }
 
   async getCaseInfo(caseId: number): Promise<CaseInfo[]> {
-    return this.caseInfo.get(caseId) || [];
+    if (!Number.isInteger(caseId) || caseId < 1) {
+      return [];
+    }
+    return db
+      .select()
+      .from(caseInfo)
+      .where(eq(caseInfo.caseId, caseId));
   }
 
   async createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo> {
-    const id = this.currentInfoId++;
+    if (!Number.isInteger(info.caseId) || info.caseId < 1) {
+      throw new Error("Invalid case ID");
+    }
+
     const timestamp = new Date().toISOString();
-
-    const newInfo: CaseInfo = {
-      id,
-      caseId: info.caseId,
-      category: info.category,
-      data: info.data,
-      source: info.source || "",
-      confidence: info.confidence || "medium",
-      verificationStatus: info.verificationStatus || "unverified",
-      timestamp
-    };
-
-    const existingInfo = this.caseInfo.get(info.caseId) || [];
-    this.caseInfo.set(info.caseId, [...existingInfo, newInfo]);
-
+    const [newInfo] = await db
+      .insert(caseInfo)
+      .values({
+        ...info,
+        timestamp,
+      })
+      .returning();
     return newInfo;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
