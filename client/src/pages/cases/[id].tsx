@@ -97,16 +97,53 @@ export default function CaseDetail() {
         </div>
 
         <div className="bg-card/50 rounded-md p-4">
-          {typeof info.data === 'object' && !('content' in info.data) ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {Object.entries(info.data).map(([key, value]) => (
-                <div key={key} className="flex gap-2">
-                  <span className="font-medium capitalize min-w-[120px]">
-                    {key.replace(/_/g, " ")}:
-                  </span>
-                  <span className="text-muted-foreground">{value?.toString() || '-'}</span>
-                </div>
-              ))}
+          {typeof info.data === 'object' ? (
+            <div className="space-y-4">
+              {Object.entries(info.data).map(([key, value]) => {
+                if (key === 'search_engines' || key === 'archives' || key === 'possible_profiles') {
+                  return (
+                    <div key={key} className="space-y-2">
+                      <h4 className="font-medium capitalize">{key.replace(/_/g, " ")}:</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Array.isArray(value) && value.map((item: any, index: number) => (
+                          <a
+                            key={index}
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-500 hover:underline"
+                          >
+                            {item.name || item.platform}
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Handle regular key-value pairs
+                return (
+                  <div key={key} className="flex gap-2">
+                    <span className="font-medium capitalize min-w-[120px]">
+                      {key.replace(/_/g, " ")}:
+                    </span>
+                    <span className="text-muted-foreground">
+                      {typeof value === 'string' && value.startsWith('http') ? (
+                        <a
+                          href={value}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-500 hover:underline"
+                        >
+                          {value}
+                        </a>
+                      ) : (
+                        value?.toString() || '-'
+                      )}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           ) : (
             <p className="whitespace-pre-wrap text-muted-foreground">

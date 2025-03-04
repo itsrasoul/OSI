@@ -1,5 +1,109 @@
 import { apiRequest } from './queryClient';
 
+async function checkSocialPlatforms(username: string) {
+  const platforms = [
+    { name: 'GitHub', url: `https://github.com/${username}` },
+    { name: 'Twitter', url: `https://twitter.com/${username}` },
+    { name: 'LinkedIn', url: `https://linkedin.com/in/${username}` },
+    { name: 'Instagram', url: `https://instagram.com/${username}` },
+    { name: 'Medium', url: `https://medium.com/@${username}` },
+    { name: 'Dev.to', url: `https://dev.to/${username}` }
+  ];
+
+  return {
+    category: "social_media",
+    data: {
+      platform: "Multiple Platforms",
+      username: username,
+      possible_profiles: platforms.map(p => ({ platform: p.name, url: p.url })),
+      note: "Check these potential profile URLs manually"
+    }
+  };
+}
+
+async function performDomainLookup(query: string) {
+  const domain = query.includes('@') ? query.split('@')[1] : 
+                query.includes('.') ? query : null;
+
+  if (!domain) return null;
+
+  return {
+    category: "domains",
+    data: {
+      domain: domain,
+      whois_lookup: `https://who.is/whois/${domain}`,
+      dns_records: `https://dnsdumpster.com/`,
+      ssl_info: `https://crt.sh/?q=${domain}`,
+      note: "Use these tools to gather domain intelligence"
+    }
+  };
+}
+
+async function searchEmailBreaches(email: string) {
+  if (!email.includes('@')) return null;
+
+  return {
+    category: "search_results",
+    data: {
+      email: email,
+      breach_lookup: "https://haveibeenpwned.com/",
+      paste_search: "https://psbdmp.ws/",
+      note: "Check these databases for potential data breaches"
+    }
+  };
+}
+
+export async function searchPerson(query: string) {
+  try {
+    const findings = [];
+    const username = query.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Basic information structure
+    findings.push({
+      category: "personal_info",
+      data: {
+        query: query,
+        possible_name: query.includes('@') ? query.split('@')[0] : query,
+        note: "Starting point for investigation"
+      }
+    });
+
+    // Social media presence
+    findings.push(await checkSocialPlatforms(username));
+
+    // Domain information if applicable
+    const domainInfo = await performDomainLookup(query);
+    if (domainInfo) findings.push(domainInfo);
+
+    // Email breach check if applicable
+    const breachInfo = await searchEmailBreaches(query);
+    if (breachInfo) findings.push(breachInfo);
+
+    // Add search suggestions
+    findings.push({
+      category: "search_results",
+      data: {
+        query: query,
+        search_engines: [
+          { name: "Google Dorks", url: `https://www.google.com/search?q=intext:"${query}" OR inurl:"${username}"` },
+          { name: "Yandex", url: `https://yandex.com/search/?text="${query}"` },
+          { name: "DuckDuckGo", url: `https://duckduckgo.com/?q="${query}"` }
+        ],
+        archives: [
+          { name: "Wayback Machine", url: `https://web.archive.org/web/*/${query}*` },
+          { name: "Archive.today", url: `https://archive.today/` }
+        ],
+        note: "Use these resources for deeper investigation"
+      }
+    });
+
+    return findings;
+  } catch (error) {
+    console.error("OSINT search failed:", error);
+    throw new Error("Failed to gather intelligence data");
+  }
+}
+
 interface HunterResponse {
   data: {
     domain: string;
@@ -36,101 +140,7 @@ interface HunterResponse {
   };
 }
 
-export async function searchPerson(query: string) {
-  try {
-    // Search for email pattern
-    const isEmail = query.includes('@');
-    const domain = isEmail ? query.split('@')[1] : '';
-    const name = isEmail ? query.split('@')[0] : query;
-
-    // Make Hunter.io API call
-    const hunterUrl = `https://api.hunter.io/v2/domain-search?${domain ? `domain=${domain}` : `company=${encodeURIComponent(name)}`}`;
-    const response = await fetch(hunterUrl, {
-      headers: {
-        'Authorization': `Bearer ${process.env.HUNTER_API_KEY}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Hunter.io API error: ${response.status}`);
-    }
-
-    const hunterData = await response.json() as HunterResponse;
-    const findings = [];
-
-    // Process organization information if available
-    if (hunterData.data?.organization) {
-      findings.push({
-        category: "personal_info",
-        data: {
-          name: name,
-          organization: hunterData.data.organization,
-          domain: hunterData.data.domain || 'Not found',
-        }
-      });
-    }
-
-    // Process email findings
-    if (hunterData.data?.emails?.length > 0) {
-      const emailFindings = hunterData.data.emails.map(email => ({
-        position: email.position,
-        confidence: email.confidence,
-        linkedin: email.linkedin,
-        twitter: email.twitter,
-        department: email.department,
-        seniority: email.seniority
-      })).filter(data => Object.values(data).some(value => value !== null));
-
-      if (emailFindings.length > 0) {
-        findings.push({
-          category: "employment",
-          data: {
-            company: hunterData.data.organization,
-            position: emailFindings[0].position || 'Not found',
-            seniority: emailFindings[0].seniority || 'Not found',
-            department: emailFindings[0].department || 'Not found'
-          }
-        });
-
-        findings.push({
-          category: "social_media",
-          data: {
-            platform: "Multiple",
-            linkedin: emailFindings[0].linkedin || 'Not found',
-            twitter: emailFindings[0].twitter || 'Not found',
-            confidence: `${emailFindings[0].confidence}%`
-          }
-        });
-      }
-    }
-
-    // If no results found, add a general search result
-    if (findings.length === 0) {
-      findings.push({
-        category: "search_results",
-        data: {
-          query: query,
-          status: "No direct matches found",
-          suggestion: "Try refining your search terms or using a company domain"
-        }
-      });
-    }
-
-    return findings;
-  } catch (error) {
-    console.error("OSINT search failed:", error);
-    throw new Error("Failed to gather intelligence data");
-  }
-}
-
 async function performWebSearch(query: string) {
-  // Here we'd integrate with a search API
-  // For now, return placeholder data
-  return [
-    {
-      title: `Search results for ${query}`,
-      url: "Analyzing web presence...",
-      description: "Gathering public information..."
-    }
-  ];
+  //This function is not used anymore.
+  return []
 }
