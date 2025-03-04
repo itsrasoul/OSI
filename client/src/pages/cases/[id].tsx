@@ -259,22 +259,22 @@ export default function CaseDetail() {
 
   return (
     <motion.div
-      className="space-y-6"
+      className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8"
       variants={pageVariants}
       initial="initial"
       animate="animate"
       exit="exit"
     >
       <motion.div
-        className="border-b pb-4"
+        className="border-b pb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold">{case_?.name}</h1>
-            <p className="text-muted-foreground mt-2">{case_?.description}</p>
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-bold">{case_?.name}</h1>
+            <p className="text-muted-foreground">{case_?.description}</p>
           </div>
           {case_ && (
             <CaseControls
@@ -287,7 +287,7 @@ export default function CaseDetail() {
       </motion.div>
 
       <motion.div
-        className="max-w-2xl mx-auto space-y-4"
+        className="max-w-[1400px] mx-auto space-y-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
@@ -655,26 +655,33 @@ export default function CaseDetail() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
+          className="mt-8"
         >
-          <Tabs defaultValue={categories[0]} className="space-y-6">
-            <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-              <TabsList className="w-full p-1">
-                {categories.map((category) => (
-                  <TabsTrigger key={category} value={category} className="capitalize">
-                    {category.replace(/_/g, " ")}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </ScrollArea>
+          <Tabs defaultValue={categories[0]} className="space-y-8">
+            <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4">
+              <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+                <TabsList className="w-full p-2">
+                  {categories.map((category) => (
+                    <TabsTrigger 
+                      key={category} 
+                      value={category} 
+                      className="capitalize px-4 py-2"
+                    >
+                      {category.replace(/_/g, " ")}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </ScrollArea>
+            </div>
 
             {categories.map((category) => (
               <TabsContent key={category} value={category}>
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <Card>
+                <div className="grid gap-8 lg:grid-cols-2">
+                  <Card className="lg:sticky lg:top-24 h-fit">
                     <CardHeader>
                       <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-6">
                       <InfoForm caseId={caseId} category={category} />
                     </CardContent>
                   </Card>
@@ -684,14 +691,14 @@ export default function CaseDetail() {
                       <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-[600px] pr-4">
+                      <ScrollArea className="h-[70vh] pr-4">
                         {caseInfo?.filter(info => info.category === category).length === 0 ? (
                           <div className="flex items-center justify-center h-32 text-muted-foreground">
                             <AlertCircle className="h-4 w-4 mr-2" />
                             No information found
                           </div>
                         ) : (
-                          <div className="space-y-4">
+                          <div className="space-y-6">
                             {caseInfo
                               ?.filter((info) => info.category === category)
                               .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -702,7 +709,7 @@ export default function CaseDetail() {
                                   animate={{ opacity: 1, y: 0 }}
                                   transition={{ delay: 0.1 }}
                                 >
-                                  <Card className="p-4">
+                                  <Card className="p-6">
                                     {renderInfoData(info)}
                                   </Card>
                                 </motion.div>
