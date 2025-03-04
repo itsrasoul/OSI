@@ -39,97 +39,17 @@ export default function CaseDetail() {
     setActiveSearch(searchTerm);
 
     try {
-      // Simulate info gathering with more comprehensive sources
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Generate more detailed findings based on search term
-      const findings = [
-        {
-          category: "personal_info",
-          data: {
-            name: searchTerm,
-            occupation: "Analyzing background...",
-            location: "Multiple locations found...",
-            languages: "Detecting communication patterns...",
-            marital_status: "Analyzing relationships...",
-          }
-        },
-        {
-          category: "social_media",
-          data: {
-            platform: "Multiple Platforms",
-            username: searchTerm.toLowerCase().replace(/[^a-z0-9]/g, ''),
-            url: `Multiple profiles detected: ${searchTerm}`,
-            bio: "Cross-referencing social profiles...",
-            followers: "Analyzing network size...",
-            following: "Mapping connections...",
-            last_active: "Tracking digital footprint..."
-          }
-        },
-        {
-          category: "employment",
-          data: {
-            company: "Multiple affiliations detected...",
-            position: "Career progression analysis...",
-            period: "Timeline analysis in progress...",
-            location: "Multiple work locations found...",
-            responsibilities: "Professional background analysis...",
-            linkedin_url: "Professional network mapping..."
-          }
-        },
-        {
-          category: "domains",
-          data: {
-            domain: `Analyzing domains related to: ${searchTerm}`,
-            registrar: "Multiple registrars found...",
-            creation_date: "Timeline analysis...",
-            expiry_date: "Active registration periods...",
-            nameservers: "Infrastructure mapping...",
-            ip_addresses: "Digital footprint analysis..."
-          }
-        },
-        {
-          category: "connections",
-          data: {
-            name: "Multiple associated identities",
-            relationship: "Network analysis in progress...",
-            platform: "Cross-platform connections...",
-            strength: "Relationship strength analysis...",
-            mutual_connections: "Mapping mutual contacts..."
-          }
-        },
-        {
-          category: "addresses",
-          data: {
-            type: "Multiple locations detected",
-            street: "Address history analysis...",
-            city: "Geographic pattern analysis...",
-            country: "International presence detection...",
-            period: "Timeline analysis in progress..."
-          }
-        },
-        {
-          category: "search_results",
-          data: {
-            search_engine: "Multiple Sources",
-            query: searchTerm,
-            url: "Aggregating digital presence...",
-            title: "Analyzing online mentions...",
-            snippet: "Processing public information...",
-            rank: "Relevance analysis in progress..."
-          }
-        }
-      ];
-
+      // Use the real OSINT service
+      const findings = await searchPerson(searchTerm);
       setSearchResults(findings);
 
-      // Save findings with confidence levels
+      // Save findings with proper metadata
       for (const finding of findings) {
         await apiRequest("POST", `/api/cases/${id}/info`, {
           caseId,
           category: finding.category,
           data: finding.data,
-          source: "Enhanced OSINT Analysis",
+          source: "Hunter.io OSINT Analysis",
           confidence: "medium",
           verificationStatus: "unverified"
         });
@@ -138,7 +58,7 @@ export default function CaseDetail() {
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${id}/info`] });
       toast({ 
         title: "Intelligence Gathered", 
-        description: `Found information across ${findings.length} intelligence categories` 
+        description: `Found information across ${findings.length} categories` 
       });
     } catch (error) {
       toast({ 
