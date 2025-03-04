@@ -31,7 +31,8 @@ import {
   FileSearch,
   CheckCircle2,
   AlertOctagon,
-  Clock
+  Clock,
+  CheckCircle
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
@@ -45,9 +46,10 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
     queryKey: ['/api/cases']
   });
 
-  // Calculate case statistics
+  // Calculate case statistics - excluding closed cases
   const activeCases = cases?.filter(c => c.status === 'active').length || 0;
   const pendingReview = cases?.filter(c => c.status === 'pending').length || 0;
+  const closedCases = cases?.filter(c => c.status === 'closed').length || 0;
   const totalCases = cases?.length || 0;
 
   // Calculate total information coverage percentage
@@ -56,6 +58,15 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
     const totalPossibleFields = 20; // Maximum expected fields
     const uniqueCategories = new Set(caseInfo.map(info => info.category));
     return Math.min((uniqueCategories.size / totalPossibleFields) * 100, 100);
+  };
+
+  // Calculate verification percentage
+  const calculateVerificationProgress = () => {
+    if (!caseInfo?.length) return 0;
+    const verifiedCount = caseInfo.filter(info => 
+      info.verificationStatus === 'verified' && info.source
+    ).length;
+    return Math.round((verifiedCount / caseInfo.length) * 100);
   };
 
   // Prepare data for visualizations
@@ -95,6 +106,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
   };
 
   const progressPercentage = calculateProgress();
+  const verificationPercentage = calculateVerificationProgress();
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -125,7 +137,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
       animate="visible"
     >
       {/* Summary Statistics */}
-      <motion.div variants={itemVariants} className="grid gap-6 md:grid-cols-3">
+      <motion.div variants={itemVariants} className="grid gap-6 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -149,6 +161,20 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
               <div>
                 <p className="text-sm text-muted-foreground">Pending Review</p>
                 <h3 className="text-2xl font-bold">{pendingReview}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="rounded-full p-3 bg-red-500/10">
+                <AlertCircle className="h-6 w-6 text-red-500" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Closed Cases</p>
+                <h3 className="text-2xl font-bold">{closedCases}</h3>
               </div>
             </div>
           </CardContent>
@@ -187,6 +213,13 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
                   <span className="text-sm text-muted-foreground">{progressPercentage.toFixed(0)}%</span>
                 </div>
                 <Progress value={progressPercentage} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm font-medium">Information Verification</span>
+                  <span className="text-sm text-muted-foreground">{verificationPercentage}%</span>
+                </div>
+                <Progress value={verificationPercentage} className="h-2" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {Object.entries(categoryCounts || {}).map(([category, count], index) => (
@@ -259,6 +292,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
             <div className="space-y-8">
               {caseInfo?.slice(-5).map((info, index) => {
                 const Icon = categoryIcons[info.category] || FileText;
+                const isVerified = info.verificationStatus === 'verified' && info.source;
                 return (
                   <motion.div
                     key={info.id}
@@ -278,6 +312,12 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
                         <Badge variant="outline" className="text-xs">
                           {info.verificationStatus}
                         </Badge>
+                        {isVerified && (
+                          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Verified
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         Source: {info.source || 'Not specified'}
