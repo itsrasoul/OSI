@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import CaseControls from "@/components/cases/case-controls";
+import ScrollBar from "@/components/ui/scroll-bar"; // Assuming this component exists
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -659,18 +660,19 @@ export default function CaseDetail() {
         >
           <Tabs defaultValue={categories[0]} className="space-y-8">
             <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-4">
-              <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-                <TabsList className="w-full p-2">
+              <ScrollArea className="w-full whitespace-nowrap rounded-md border" style={{ overflowX: 'auto' }}>
+                <TabsList className="inline-flex h-10 items-center justify-center rounded-md bg-muted text-muted-foreground w-full p-2">
                   {categories.map((category) => (
                     <TabsTrigger 
                       key={category} 
                       value={category} 
-                      className="capitalize px-4 py-2"
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-sm text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm capitalize px-4 py-2"
                     >
                       {category.replace(/_/g, " ")}
                     </TabsTrigger>
                   ))}
                 </TabsList>
+                <ScrollBar orientation="horizontal" className="h-2.5" />
               </ScrollArea>
             </div>
 
