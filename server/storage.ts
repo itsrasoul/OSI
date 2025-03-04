@@ -37,12 +37,18 @@ export class MemStorage implements IStorage {
 
   async createCase(caseData: InsertCase): Promise<Case> {
     const id = this.currentCaseId++;
-    const newCase = { 
-      ...caseData, 
+    const timestamp = new Date().toISOString();
+
+    const newCase: Case = {
       id,
+      name: caseData.name,
       description: caseData.description || "",
-      status: caseData.status || "active"
+      status: caseData.status || "active",
+      priority: caseData.priority || "medium",
+      createdAt: timestamp,
+      updatedAt: timestamp
     };
+
     this.cases.set(id, newCase);
     this.caseInfo.set(id, []);
     return newCase;
@@ -57,10 +63,14 @@ export class MemStorage implements IStorage {
     const timestamp = new Date().toISOString();
 
     const newInfo: CaseInfo = {
-      ...info,
       id,
-      timestamp,
+      caseId: info.caseId,
+      category: info.category,
+      data: info.data,
       source: info.source || "",
+      confidence: info.confidence || "medium",
+      verificationStatus: info.verificationStatus || "unverified",
+      timestamp
     };
 
     const existingInfo = this.caseInfo.get(info.caseId) || [];
