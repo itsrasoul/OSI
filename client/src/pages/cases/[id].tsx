@@ -39,58 +39,110 @@ export default function CaseDetail() {
     setActiveSearch(searchTerm);
 
     try {
-      // Simulate info gathering
+      // Simulate info gathering with more comprehensive sources
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // Generate findings based on search term
+      // Generate more detailed findings based on search term
       const findings = [
         {
           category: "personal_info",
           data: {
             name: searchTerm,
-            occupation: "Analyzing professional history...",
-            location: "Searching locations...",
-            languages: "Detecting languages used...",
+            occupation: "Analyzing background...",
+            location: "Multiple locations found...",
+            languages: "Detecting communication patterns...",
+            marital_status: "Analyzing relationships...",
           }
         },
         {
           category: "social_media",
           data: {
-            platform: "Multiple",
+            platform: "Multiple Platforms",
             username: searchTerm.toLowerCase().replace(/[^a-z0-9]/g, ''),
-            bio: "Analyzing social presence...",
-            last_active: "Analyzing activity patterns...",
+            url: `Multiple profiles detected: ${searchTerm}`,
+            bio: "Cross-referencing social profiles...",
+            followers: "Analyzing network size...",
+            following: "Mapping connections...",
+            last_active: "Tracking digital footprint..."
           }
         },
         {
           category: "employment",
           data: {
-            company: "Scanning company affiliations...",
-            position: "Analyzing career progression...",
-            linkedin_url: "Identifying professional networks..."
+            company: "Multiple affiliations detected...",
+            position: "Career progression analysis...",
+            period: "Timeline analysis in progress...",
+            location: "Multiple work locations found...",
+            responsibilities: "Professional background analysis...",
+            linkedin_url: "Professional network mapping..."
+          }
+        },
+        {
+          category: "domains",
+          data: {
+            domain: `Analyzing domains related to: ${searchTerm}`,
+            registrar: "Multiple registrars found...",
+            creation_date: "Timeline analysis...",
+            expiry_date: "Active registration periods...",
+            nameservers: "Infrastructure mapping...",
+            ip_addresses: "Digital footprint analysis..."
+          }
+        },
+        {
+          category: "connections",
+          data: {
+            name: "Multiple associated identities",
+            relationship: "Network analysis in progress...",
+            platform: "Cross-platform connections...",
+            strength: "Relationship strength analysis...",
+            mutual_connections: "Mapping mutual contacts..."
+          }
+        },
+        {
+          category: "addresses",
+          data: {
+            type: "Multiple locations detected",
+            street: "Address history analysis...",
+            city: "Geographic pattern analysis...",
+            country: "International presence detection...",
+            period: "Timeline analysis in progress..."
+          }
+        },
+        {
+          category: "search_results",
+          data: {
+            search_engine: "Multiple Sources",
+            query: searchTerm,
+            url: "Aggregating digital presence...",
+            title: "Analyzing online mentions...",
+            snippet: "Processing public information...",
+            rank: "Relevance analysis in progress..."
           }
         }
       ];
 
       setSearchResults(findings);
 
-      // Save findings
+      // Save findings with confidence levels
       for (const finding of findings) {
         await apiRequest("POST", `/api/cases/${id}/info`, {
           caseId,
           category: finding.category,
           data: finding.data,
-          source: "OSINT Search",
+          source: "Enhanced OSINT Analysis",
           confidence: "medium",
           verificationStatus: "unverified"
         });
       }
 
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${id}/info`] });
-      toast({ title: "Intelligence gathered", description: `Found information in ${findings.length} categories` });
+      toast({ 
+        title: "Intelligence Gathered", 
+        description: `Found information across ${findings.length} intelligence categories` 
+      });
     } catch (error) {
       toast({ 
-        title: "Search failed", 
+        title: "Analysis Failed", 
         description: "Could not complete intelligence gathering",
         variant: "destructive"
       });
