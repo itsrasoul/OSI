@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import CaseDashboard from "@/components/cases/case-dashboard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus } from "lucide-react";
-import { CaseInfo } from "@shared/schema"; // Assuming CaseInfo type is defined
+import { CaseInfo } from "@shared/schema";
 
 export default function Home() {
   const { data: cases } = useQuery<Case[]>({ 
@@ -26,9 +26,9 @@ export default function Home() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="w-full md:w-auto">
-          <h1 className="text-3xl sm:text-4xl font-bold">Intelligence Dashboard</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold">OSI Dashboard</h1>
           <p className="text-muted-foreground mt-3">
-            Track and manage your OSINT investigations
+            Open Source Intelligence Investigation Platform
           </p>
         </div>
         <Button asChild className="w-full md:w-auto">
@@ -47,7 +47,7 @@ export default function Home() {
           {/* Recent Cases */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle>Recent Cases</CardTitle>
+              <CardTitle>Recent Investigations</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

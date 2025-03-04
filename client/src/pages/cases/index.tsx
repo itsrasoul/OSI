@@ -24,13 +24,13 @@ export default function CasesList() {
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-8 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center gap-6 pb-6 border-b">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold">Cases</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold">OSI Investigations</h1>
           <p className="text-muted-foreground mt-2">
-            Manage and track your investigations
+            Manage and track your intelligence gathering operations
           </p>
         </div>
         <Button onClick={() => setShowNewCase(true)} className="w-full md:w-auto">
-          <Plus className="mr-2 h-4 w-4" /> New Case
+          <Plus className="mr-2 h-4 w-4" /> New Investigation
         </Button>
       </div>
 
