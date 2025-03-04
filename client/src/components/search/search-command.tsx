@@ -33,6 +33,19 @@ export default function SearchCommand({ caseId, onResultFound }: SearchCommandPr
     return () => document.removeEventListener("keydown", down);
   }, []);
 
+  const handleExport = async () => {
+    const findings = await fetch(`/api/cases/${caseId}/info`).then(res => res.json());
+    const jsonStr = JSON.stringify(findings, null, 2);
+    const dataUrl = `data:text/json;charset=utf-8,${encodeURIComponent(jsonStr)}`;
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = `case-${caseId}-findings.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast({ title: "Findings exported successfully" });
+  };
+
   const analyzeTarget = async (type: string) => {
     try {
       // Simulate analysis delay
@@ -124,6 +137,12 @@ export default function SearchCommand({ caseId, onResultFound }: SearchCommandPr
             </CommandItem>
             <CommandItem onSelect={() => analyzeTarget("travel")}>
               <span>Movement Pattern Analysis</span>
+            </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Case Actions">
+            <CommandItem onSelect={handleExport}>
+              <span>Export Investigation Data</span>
             </CommandItem>
           </CommandGroup>
         </CommandList>

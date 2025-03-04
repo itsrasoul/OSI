@@ -10,11 +10,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { FileText, AlertCircle, Users, Building2, Globe } from "lucide-react";
+import { FileText, AlertCircle, Users, Building2, Globe, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import SearchCommand from "@/components/search/search-command";
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -31,14 +32,6 @@ export default function CaseDetail() {
   const [searchResults, setSearchResults] = useState<Array<{category: string, data: any}>>([]);
   const [activeSearch, setActiveSearch] = useState<string | null>(null);
 
-  const { data: case_ } = useQuery<Case>({ 
-    queryKey: [`/api/cases/${id}`]
-  });
-
-  const { data: caseInfo } = useQuery<CaseInfo[]>({ 
-    queryKey: [`/api/cases/${id}/info`]
-  });
-
   // Initialize Google Custom Search Element
   useEffect(() => {
     const script = document.createElement('script');
@@ -50,6 +43,14 @@ export default function CaseDetail() {
       document.head.removeChild(script);
     };
   }, []);
+
+  const { data: case_ } = useQuery<Case>({ 
+    queryKey: [`/api/cases/${id}`]
+  });
+
+  const { data: caseInfo } = useQuery<CaseInfo[]>({ 
+    queryKey: [`/api/cases/${id}/info`]
+  });
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
@@ -230,36 +231,10 @@ export default function CaseDetail() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
       >
-        <Card className="border-2 border-primary/20">
-          <CardContent className="pt-6">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  placeholder="Enter target identifier (name, email, username...)"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                />
-              </div>
-              <Button 
-                onClick={handleSearch}
-                disabled={!searchTerm.trim() || isSearching}
-                className="min-w-[100px]"
-              >
-                {isSearching ? "Searching..." : "Search"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Investigation Dashboard */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <CaseDashboard caseInfo={caseInfo} />
-        </motion.div>
+        {/* Command Palette */}
+        <SearchCommand caseId={caseId} onResultFound={(category, data) => {
+          setSearchResults(prev => [...prev, { category, data }]);
+        }} />
 
         {/* Google Custom Search Results */}
         <Card>
@@ -320,6 +295,15 @@ export default function CaseDetail() {
           </CardContent>
         </Card>
 
+        {/* Investigation Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <CaseDashboard caseInfo={caseInfo} />
+        </motion.div>
+
         {/* Social Media Results */}
         {searchResults.length > 0 && (
           <motion.div
@@ -340,10 +324,22 @@ export default function CaseDetail() {
                     {searchResults
                       .filter(result => result.category === "social_media")
                       .map((result, index) => (
-                        <div key={index} className="space-y-2">
+                        <motion.div 
+                          key={index} 
+                          className="space-y-2"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
                           <div className="whitespace-pre-wrap text-sm">
                             {result.data.profiles?.split('\n').map((profile: string, i: number) => (
-                              <div key={i} className="flex items-center gap-2 py-1">
+                              <motion.div 
+                                key={i} 
+                                className="flex items-center gap-2 py-1"
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                              >
                                 <a 
                                   href={profile.split(': ')[1]}
                                   target="_blank"
@@ -352,11 +348,11 @@ export default function CaseDetail() {
                                 >
                                   {profile.split(': ')[0]}
                                 </a>
-                              </div>
+                              </motion.div>
                             ))}
                           </div>
-                        </div>
-                      ))}
+                        </motion.div>
+                    ))}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -384,24 +380,37 @@ export default function CaseDetail() {
                     {searchResults
                       .filter(result => !["social_media", "search_results"].includes(result.category))
                       .map((result, index) => (
-                        <Card key={index} className="p-4">
-                          <div className="space-y-2">
-                            <h3 className="text-lg font-semibold capitalize">
-                              {result.category.replace(/_/g, " ")}
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {Object.entries(result.data).map(([key, value]) => (
-                                <div key={key} className="flex gap-2">
-                                  <span className="font-medium capitalize min-w-[120px]">
-                                    {key.replace(/_/g, " ")}:
-                                  </span>
-                                  <span className="text-muted-foreground">{value?.toString()}</span>
-                                </div>
-                              ))}
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <Card className="p-4">
+                            <div className="space-y-2">
+                              <h3 className="text-lg font-semibold capitalize">
+                                {result.category.replace(/_/g, " ")}
+                              </h3>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {Object.entries(result.data).map(([key, value]) => (
+                                  <motion.div 
+                                    key={key} 
+                                    className="flex gap-2"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.1 }}
+                                  >
+                                    <span className="font-medium capitalize min-w-[120px]">
+                                      {key.replace(/_/g, " ")}:
+                                    </span>
+                                    <span className="text-muted-foreground">{value?.toString()}</span>
+                                  </motion.div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        </Card>
-                      ))}
+                          </Card>
+                        </motion.div>
+                    ))}
                   </div>
                 </ScrollArea>
               </CardContent>
@@ -455,9 +464,16 @@ export default function CaseDetail() {
                             ?.filter((info) => info.category === category)
                             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
                             .map((info) => (
-                              <Card key={info.id} className="p-4">
-                                {renderInfoData(info)}
-                              </Card>
+                              <motion.div
+                                key={info.id}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                              >
+                                <Card className="p-4">
+                                  {renderInfoData(info)}
+                                </Card>
+                              </motion.div>
                             ))}
                         </div>
                       )}
