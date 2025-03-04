@@ -37,10 +37,10 @@ import {
 import { Progress } from "@/components/ui/progress";
 
 interface CaseDashboardProps {
-  caseInfo?: CaseInfo[];
+  caseInfo?: Case[] | CaseInfo[];
 }
 
-export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
+export default function CaseDashboard({ caseInfo = [] }: CaseDashboardProps) {
   // Fetch all cases to get stats
   const { data: cases } = useQuery<Case[]>({
     queryKey: ['/api/cases'],
@@ -58,22 +58,29 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
   const calculateProgress = () => {
     if (!caseInfo?.length) return 0;
     const totalPossibleFields = 20; // Maximum expected fields
-    const uniqueCategories = new Set(caseInfo.map(info => info.category));
+    const uniqueCategories = new Set(
+      caseInfo
+        .filter((info): info is CaseInfo => 'category' in info)
+        .map(info => info.category)
+    );
     return Math.min((uniqueCategories.size / totalPossibleFields) * 100, 100);
   };
 
   // Calculate verification percentage
   const calculateVerificationProgress = () => {
     if (!caseInfo?.length) return 0;
-    const verifiedCount = caseInfo.filter(info => info.source).length;
-    return Math.round((verifiedCount / caseInfo.length) * 100);
+    const infos = caseInfo.filter((info): info is CaseInfo => 'source' in info);
+    const verifiedCount = infos.filter(info => info.source).length;
+    return Math.round((verifiedCount / infos.length) * 100);
   };
 
   // Prepare data for visualizations
-  const categoryCounts = caseInfo?.reduce((acc, info) => {
-    acc[info.category] = (acc[info.category] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const categoryCounts = caseInfo
+    .filter((info): info is CaseInfo => 'category' in info)
+    .reduce((acc, info) => {
+      acc[info.category] = (acc[info.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
   const chartData = Object.entries(categoryCounts || {}).map(([category, count]) => ({
     category: category.replace(/_/g, " "),
@@ -81,11 +88,13 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
   }));
 
   // Prepare timeline data for the line chart
-  const timelineData = caseInfo?.reduce((acc, info) => {
-    const date = new Date(info.timestamp).toLocaleDateString();
-    acc[date] = (acc[date] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const timelineData = caseInfo
+    .filter((info): info is CaseInfo => 'timestamp' in info)
+    .reduce((acc, info) => {
+      const date = new Date(info.timestamp).toLocaleDateString();
+      acc[date] = (acc[date] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
   const lineChartData = Object.entries(timelineData || {}).map(([date, count]) => ({
     date,
@@ -292,7 +301,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
             <div className="space-y-8">
               {caseInfo?.slice(-5).map((info, index) => {
                 const Icon = categoryIcons[info.category] || FileText;
-                const isVerified = info.source;
+                const isVerified = ('source' in info) ? info.source : undefined;
                 return (
                   <motion.div
                     key={info.id}
@@ -317,7 +326,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Source: {info.source || 'Not specified'}
+                        Source: {isVerified || 'Not specified'}
                       </p>
                     </div>
                   </motion.div>

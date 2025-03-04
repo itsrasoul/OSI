@@ -7,11 +7,18 @@ import { motion } from "framer-motion";
 import CaseDashboard from "@/components/cases/case-dashboard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus } from "lucide-react";
+import { CaseInfo } from "@shared/schema"; // Assuming CaseInfo type is defined
 
 export default function Home() {
   const { data: cases } = useQuery<Case[]>({ 
     queryKey: ["/api/cases"],
     // Refresh data every 5 seconds
+    refetchInterval: 5000,
+  });
+
+  // Add CaseInfo query
+  const { data: allCaseInfo } = useQuery<CaseInfo[]>({
+    queryKey: ["/api/cases/info"],
     refetchInterval: 5000,
   });
 
@@ -35,7 +42,7 @@ export default function Home() {
       <ScrollArea className="h-[calc(100vh-12rem)]">
         <div className="space-y-8 pr-4">
           {/* Main Dashboard */}
-          <CaseDashboard caseInfo={cases || []} />
+          <CaseDashboard caseInfo={allCaseInfo || []} cases={cases || []} />
 
           {/* Recent Cases */}
           <Card>
