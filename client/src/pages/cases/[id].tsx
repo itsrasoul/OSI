@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { FileText, AlertCircle } from "lucide-react";
+import { FileText, AlertCircle, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -20,6 +20,8 @@ export default function CaseDetail() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<Array<{category: string, data: any}>>([]);
+  const [activeSearch, setActiveSearch] = useState<string | null>(null);
 
   const { data: case_ } = useQuery<Case>({ 
     queryKey: [`/api/cases/${id}`]
@@ -34,6 +36,7 @@ export default function CaseDetail() {
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
     setIsSearching(true);
+    setActiveSearch(searchTerm);
 
     try {
       // Simulate info gathering
@@ -45,8 +48,9 @@ export default function CaseDetail() {
           category: "personal_info",
           data: {
             name: searchTerm,
-            occupation: "Analyzing...",
-            location: "Searching...",
+            occupation: "Analyzing professional history...",
+            location: "Searching locations...",
+            languages: "Detecting languages used...",
           }
         },
         {
@@ -55,9 +59,20 @@ export default function CaseDetail() {
             platform: "Multiple",
             username: searchTerm.toLowerCase().replace(/[^a-z0-9]/g, ''),
             bio: "Analyzing social presence...",
+            last_active: "Analyzing activity patterns...",
+          }
+        },
+        {
+          category: "employment",
+          data: {
+            company: "Scanning company affiliations...",
+            position: "Analyzing career progression...",
+            linkedin_url: "Identifying professional networks..."
           }
         }
       ];
+
+      setSearchResults(findings);
 
       // Save findings
       for (const finding of findings) {
@@ -156,25 +171,71 @@ export default function CaseDetail() {
         <p className="text-muted-foreground mt-2">{case_.description}</p>
       </div>
 
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto space-y-4">
         <Card className="border-2 border-primary/20">
           <CardContent className="pt-6">
             <div className="flex gap-2">
-              <Input
-                placeholder="Enter target identifier (name, email, username...)"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Enter target identifier (name, email, username...)"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
               <Button 
                 onClick={handleSearch}
                 disabled={!searchTerm.trim() || isSearching}
+                className="min-w-[100px]"
               >
                 {isSearching ? "Searching..." : "Search"}
               </Button>
             </div>
+
+            {activeSearch && (
+              <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                <span>Analyzing information for: </span>
+                <Badge variant="secondary">{activeSearch}</Badge>
+              </div>
+            )}
           </CardContent>
         </Card>
+
+        {searchResults.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Search Results</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-4">
+                  {searchResults.map((result, index) => (
+                    <Card key={index} className="p-4">
+                      <div className="space-y-2">
+                        <h3 className="text-lg font-semibold capitalize">
+                          {result.category.replace(/_/g, " ")}
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {Object.entries(result.data).map(([key, value]) => (
+                            <div key={key} className="flex gap-2">
+                              <span className="font-medium capitalize min-w-[120px]">
+                                {key.replace(/_/g, " ")}:
+                              </span>
+                              <span className="text-muted-foreground">{value?.toString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <Tabs defaultValue={categories[0]} className="space-y-6">
