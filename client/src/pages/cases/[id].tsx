@@ -3,7 +3,7 @@ import { useParams } from "wouter";
 import { Case, CaseInfo, categories, confidenceLevels, verificationStatuses } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InfoForm from "@/components/cases/info-form";
-import SearchPanel from "@/components/search/search-panel";
+import SearchCommand from "@/components/search/search-command";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,7 @@ export default function CaseDetail() {
         caseId,
         category,
         data,
-        source: "OSINT Search",
+        source: "OSINT Intelligence",
         confidence: "medium",
         verificationStatus: "unverified"
       });
@@ -113,7 +113,9 @@ export default function CaseDetail() {
         <p className="text-muted-foreground mt-2">{case_.description}</p>
       </div>
 
-      <SearchPanel caseId={caseId} onResultFound={handleSearchResult} />
+      <div className="max-w-2xl mx-auto">
+        <SearchCommand caseId={caseId} onResultFound={handleSearchResult} />
+      </div>
 
       <Tabs defaultValue={categories[0]} className="space-y-6">
         <ScrollArea className="w-full whitespace-nowrap rounded-md border">
