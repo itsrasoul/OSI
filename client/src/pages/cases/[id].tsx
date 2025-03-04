@@ -73,7 +73,12 @@ export default function CaseDetail() {
           data: {
             email: searchTerm,
             name: searchTerm.split('@')[0],
-            source: "Email Analysis"
+            domain: searchTerm.split('@')[1],
+            source: "Email Analysis",
+            links: [
+              `https://haveibeenpwned.com/account/${searchTerm}`,
+              `https://hunter.io/email-verifier/${searchTerm}`
+            ].join('\n')
           }
         });
       }
@@ -88,7 +93,10 @@ export default function CaseDetail() {
         { name: 'Facebook', url: `https://facebook.com/${usernamePattern}` },
         { name: 'TikTok', url: `https://tiktok.com/@${usernamePattern}` },
         { name: 'Reddit', url: `https://reddit.com/user/${usernamePattern}` },
-        { name: 'YouTube', url: `https://youtube.com/@${usernamePattern}` }
+        { name: 'YouTube', url: `https://youtube.com/@${usernamePattern}` },
+        { name: 'Medium', url: `https://medium.com/@${usernamePattern}` },
+        { name: 'Dev.to', url: `https://dev.to/${usernamePattern}` },
+        { name: 'Mastodon', url: `https://mastodon.social/@${usernamePattern}` }
       ];
 
       findings.push({
@@ -97,7 +105,8 @@ export default function CaseDetail() {
           platform: "Cross Platform",
           username: usernamePattern,
           profiles: socialPlatforms.map(p => `${p.name}: ${p.url}`).join('\n'),
-          source: "Social Media Analysis"
+          source: "Social Media Analysis",
+          usernameLookup: `https://namechk.com/${usernamePattern}`
         }
       });
 
@@ -107,9 +116,18 @@ export default function CaseDetail() {
           category: "domains",
           data: {
             domain: searchTerm,
-            whois: `https://who.is/whois/${searchTerm}`,
-            dns: `https://dns-lookup.com/${searchTerm}`,
-            source: "Domain Records"
+            links: [
+              `WHOIS Lookup: https://who.is/whois/${searchTerm}`,
+              `DNS Records: https://dns-lookup.com/${searchTerm}`,
+              `SSL Info: https://www.ssllabs.com/ssltest/analyze.html?d=${searchTerm}`,
+              `Archive: https://web.archive.org/web/*/${searchTerm}`,
+              `Subdomains: https://crt.sh/?q=${searchTerm}`
+            ].join('\n'),
+            source: "Domain Intelligence",
+            tools: [
+              `Shodan: https://www.shodan.io/search?query=${searchTerm}`,
+              `SecurityTrails: https://securitytrails.com/domain/${searchTerm}/dns`
+            ].join('\n')
           }
         });
       }
@@ -119,16 +137,42 @@ export default function CaseDetail() {
         category: "search_results",
         data: {
           source: "Public Records",
-          links: [
-            `https://search.brave.com/search?q=${encodeURIComponent(searchTerm)}`,
-            `https://duckduckgo.com/?q=${encodeURIComponent(searchTerm)}`,
-            `https://yandex.com/search/?text=${encodeURIComponent(searchTerm)}`,
-            `https://archive.org/search?query=${encodeURIComponent(searchTerm)}`
+          generalSearch: [
+            `Brave Search: https://search.brave.com/search?q=${encodeURIComponent(searchTerm)}`,
+            `DuckDuckGo: https://duckduckgo.com/?q=${encodeURIComponent(searchTerm)}`,
+            `Yandex: https://yandex.com/search/?text=${encodeURIComponent(searchTerm)}`,
+            `Wayback Machine: https://archive.org/search?query=${encodeURIComponent(searchTerm)}`
           ].join('\n'),
-          news: `https://news.google.com/search?q=${encodeURIComponent(searchTerm)}`,
-          images: `https://images.google.com/search?q=${encodeURIComponent(searchTerm)}`
+          newsSearch: [
+            `Google News: https://news.google.com/search?q=${encodeURIComponent(searchTerm)}`,
+            `Bing News: https://www.bing.com/news/search?q=${encodeURIComponent(searchTerm)}`
+          ].join('\n'),
+          imageSearch: [
+            `Google Images: https://images.google.com/search?q=${encodeURIComponent(searchTerm)}`,
+            `TinEye: https://tineye.com/search?q=${encodeURIComponent(searchTerm)}`
+          ].join('\n'),
+          documentSearch: [
+            `Google Docs: https://www.google.com/search?q=filetype:doc+OR+filetype:pdf+${encodeURIComponent(searchTerm)}`,
+            `SlideShare: https://www.slideshare.net/search/slideshow?q=${encodeURIComponent(searchTerm)}`
+          ].join('\n')
         }
       });
+
+      // Business Intelligence
+      if (searchTerm.length > 2) {
+        findings.push({
+          category: "employment",
+          data: {
+            query: searchTerm,
+            businessSearch: [
+              `CrunchBase: https://www.crunchbase.com/textsearch?q=${encodeURIComponent(searchTerm)}`,
+              `OpenCorporates: https://opencorporates.com/companies?q=${encodeURIComponent(searchTerm)}`,
+              `LinkedIn Companies: https://www.linkedin.com/company/${searchTerm}`
+            ].join('\n'),
+            source: "Business Intelligence"
+          }
+        });
+      }
 
       setSearchResults(findings);
 
@@ -147,12 +191,12 @@ export default function CaseDetail() {
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${id}/info`] });
       toast({
         title: "Search Complete",
-        description: `Found information across ${findings.length} categories`
+        description: `Found ${findings.length} intelligence sources`
       });
     } catch (error) {
       toast({
         title: "Search Failed",
-        description: "Error gathering information",
+        description: "Error gathering intelligence",
         variant: "destructive"
       });
     } finally {
