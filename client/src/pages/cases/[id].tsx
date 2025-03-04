@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import CaseControls from "@/components/cases/case-controls";
 
 const pageVariants = {
   initial: { opacity: 0, y: 20 },
@@ -270,14 +271,19 @@ export default function CaseDetail() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="flex items-center gap-2">
-          <h1 className="text-4xl font-bold">{case_?.name}</h1>
-          <Badge variant="outline">{case_?.status}</Badge>
-          {case_?.priority && (
-            <Badge>{case_?.priority}</Badge>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-4xl font-bold">{case_?.name}</h1>
+            <p className="text-muted-foreground mt-2">{case_?.description}</p>
+          </div>
+          {case_ && (
+            <CaseControls
+              caseId={caseId}
+              status={case_.status}
+              priority={case_.priority}
+            />
           )}
         </div>
-        <p className="text-muted-foreground mt-2">{case_?.description}</p>
       </motion.div>
 
       <motion.div
@@ -442,130 +448,275 @@ export default function CaseDetail() {
           </motion.div>
         )}
 
-        {/* Additional Info */}
+        {/* Additional Info - Enhanced */}
         {searchResults.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5" />
-                  Additional Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[300px] pr-4">
-                  <div className="space-y-4">
-                    {searchResults
-                      .filter(result => !["social_media", "search_results"].includes(result.category))
-                      .map((result, index) => (
-                        <motion.div
-                          key={index}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <Card className="p-4">
-                            <div className="space-y-2">
-                              <h3 className="text-lg font-semibold capitalize">
-                                {result.category.replace(/_/g, " ")}
-                              </h3>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {Object.entries(result.data).map(([key, value]) => (
-                                  <motion.div
-                                    key={key}
-                                    className="flex gap-2"
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: 0.1 }}
+            <div className="grid gap-4">
+              {/* Domain Information */}
+              {searchResults.some(r => r.category === "domains") && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Globe className="h-5 w-5 text-blue-500" />
+                      Domain Intelligence
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[200px] pr-4">
+                      {searchResults
+                        .filter(r => r.category === "domains")
+                        .map((result, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="space-y-4"
+                          >
+                            <div className="whitespace-pre-wrap">
+                              {result.data.links?.split('\n').map((link: string, i: number) => (
+                                <motion.div
+                                  key={i}
+                                  className="flex items-center gap-2 py-1"
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: i * 0.05 }}
+                                >
+                                  <a
+                                    href={link.split(': ')[1]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
                                   >
-                                    <span className="font-medium capitalize min-w-[120px]">
-                                      {key.replace(/_/g, " ")}:
-                                    </span>
-                                    <span className="text-muted-foreground">{value?.toString()}</span>
-                                  </motion.div>
-                                ))}
-                              </div>
+                                    {link.split(': ')[0]}
+                                  </a>
+                                </motion.div>
+                              ))}
                             </div>
-                          </Card>
-                        </motion.div>
-                      ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-      >
-        <Tabs defaultValue={categories[0]} className="space-y-6">
-          <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-            <TabsList className="w-full p-1">
-              {categories.map((category) => (
-                <TabsTrigger key={category} value={category} className="capitalize">
-                  {category.replace(/_/g, " ")}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </ScrollArea>
-
-          {categories.map((category) => (
-            <TabsContent key={category} value={category}>
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <InfoForm caseId={caseId} category={category} />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ScrollArea className="h-[600px] pr-4">
-                      {caseInfo?.filter(info => info.category === category).length === 0 ? (
-                        <div className="flex items-center justify-center h-32 text-muted-foreground">
-                          <AlertCircle className="h-4 w-4 mr-2" />
-                          No information found
-                        </div>
-                      ) : (
-                        <div className="space-y-4">
-                          {caseInfo
-                            ?.filter((info) => info.category === category)
-                            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                            .map((info) => (
-                              <motion.div
-                                key={info.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                              >
-                                <Card className="p-4">
-                                  {renderInfoData(info)}
-                                </Card>
-                              </motion.div>
-                            ))}
-                        </div>
-                      )}
+                          </motion.div>
+                        ))}
                     </ScrollArea>
                   </CardContent>
                 </Card>
-              </div>
-            </TabsContent>
-          ))}
-        </Tabs>
+              )}
+
+              {/* Business Information */}
+              {searchResults.some(r => r.category === "employment") && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building className="h-5 w-5 text-green-500" />
+                      Business Intelligence
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[200px] pr-4">
+                      {searchResults
+                        .filter(r => r.category === "employment")
+                        .map((result, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="space-y-4"
+                          >
+                            <div className="whitespace-pre-wrap">
+                              {result.data.businessSearch?.split('\n').map((link: string, i: number) => (
+                                <motion.div
+                                  key={i}
+                                  className="flex items-center gap-2 py-1"
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: i * 0.05 }}
+                                >
+                                  <a
+                                    href={link.split(': ')[1]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
+                                  >
+                                    {link.split(': ')[0]}
+                                  </a>
+                                </motion.div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        ))}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Search Results */}
+              {searchResults.some(r => r.category === "search_results") && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Search className="h-5 w-5 text-purple-500" />
+                      Search Intelligence
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[300px] pr-4">
+                      {searchResults
+                        .filter(r => r.category === "search_results")
+                        .map((result, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="space-y-6"
+                          >
+                            {/* General Search */}
+                            <div className="space-y-2">
+                              <h3 className="text-sm font-medium text-muted-foreground">
+                                General Search
+                              </h3>
+                              <div className="grid gap-2">
+                                {result.data.generalSearch?.split('\n').map((link: string, i: number) => (
+                                  <motion.a
+                                    key={i}
+                                    href={link.split(': ')[1]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                  >
+                                    {link.split(': ')[0]}
+                                  </motion.a>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* News Search */}
+                            <div className="space-y-2">
+                              <h3 className="text-sm font-medium text-muted-foreground">
+                                News Search
+                              </h3>
+                              <div className="grid gap-2">
+                                {result.data.newsSearch?.split('\n').map((link: string, i: number) => (
+                                  <motion.a
+                                    key={i}
+                                    href={link.split(': ')[1]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                  >
+                                    {link.split(': ')[0]}
+                                  </motion.a>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Document Search */}
+                            <div className="space-y-2">
+                              <h3 className="text-sm font-medium text-muted-foreground">
+                                Document Search
+                              </h3>
+                              <div className="grid gap-2">
+                                {result.data.documentSearch?.split('\n').map((link: string, i: number) => (
+                                  <motion.a
+                                    key={i}
+                                    href={link.split(': ')[1]}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline"
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.05 }}
+                                  >
+                                    {link.split(': ')[0]}
+                                  </motion.a>
+                                ))}
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Tabs defaultValue={categories[0]} className="space-y-6">
+            <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+              <TabsList className="w-full p-1">
+                {categories.map((category) => (
+                  <TabsTrigger key={category} value={category} className="capitalize">
+                    {category.replace(/_/g, " ")}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </ScrollArea>
+
+            {categories.map((category) => (
+              <TabsContent key={category} value={category}>
+                <div className="grid gap-6 lg:grid-cols-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <InfoForm caseId={caseId} category={category} />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ScrollArea className="h-[600px] pr-4">
+                        {caseInfo?.filter(info => info.category === category).length === 0 ? (
+                          <div className="flex items-center justify-center h-32 text-muted-foreground">
+                            <AlertCircle className="h-4 w-4 mr-2" />
+                            No information found
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {caseInfo
+                              ?.filter((info) => info.category === category)
+                              .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                              .map((info) => (
+                                <motion.div
+                                  key={info.id}
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.1 }}
+                                >
+                                  <Card className="p-4">
+                                    {renderInfoData(info)}
+                                  </Card>
+                                </motion.div>
+                              ))}
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </motion.div>
       </motion.div>
     </motion.div>
   );

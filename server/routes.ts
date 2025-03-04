@@ -30,6 +30,34 @@ export async function registerRoutes(app: Express) {
     res.json(newCase);
   });
 
+  // New endpoint for updating case status and priority
+  app.patch("/api/cases/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const { status, priority } = req.body;
+
+    const case_ = await storage.getCase(id);
+    if (!case_) {
+      res.status(404).json({ message: "Case not found" });
+      return;
+    }
+
+    const updatedCase = await storage.updateCase(id, { status, priority });
+    res.json(updatedCase);
+  });
+
+  // New endpoint for deleting a case
+  app.delete("/api/cases/:id", async (req, res) => {
+    const id = parseInt(req.params.id);
+    const case_ = await storage.getCase(id);
+    if (!case_) {
+      res.status(404).json({ message: "Case not found" });
+      return;
+    }
+
+    await storage.deleteCase(id);
+    res.status(204).end();
+  });
+
   // Case info endpoints
   app.get("/api/cases/:id/info", async (req, res) => {
     const caseId = parseInt(req.params.id);
