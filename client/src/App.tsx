@@ -15,13 +15,15 @@ function Router() {
       <Sidebar />
       <div className="flex-1 flex flex-col w-full">
         <ScrollArea className="flex-1 w-full">
-          <main className="w-full max-w-[2000px] mx-auto p-4 md:p-6 lg:p-8">
-            <Switch>
-              <Route path="/" component={Home} />
-              <Route path="/cases" component={CasesList} />
-              <Route path="/cases/:id" component={CaseDetail} />
-              <Route component={NotFound} />
-            </Switch>
+          <main className="w-full max-w-[2000px] mx-auto">
+            <div className="p-4 md:p-6 lg:p-8">
+              <Switch>
+                <Route path="/" component={Home} />
+                <Route path="/cases" component={CasesList} />
+                <Route path="/cases/:id" component={CaseDetail} />
+                <Route component={NotFound} />
+              </Switch>
+            </div>
           </main>
         </ScrollArea>
       </div>

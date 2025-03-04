@@ -266,7 +266,7 @@ export default function CaseDetail() {
       exit="exit"
     >
       <motion.div
-        className="border-b pb-4"
+        className="border-b pb-4 sticky top-0 bg-background z-50 mb-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
