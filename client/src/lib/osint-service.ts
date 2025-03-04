@@ -32,8 +32,8 @@ export async function searchPerson(query: string) {
       category: "personal_info",
       data: {
         name: name,
-        occupation: hunterData.data?.[0]?.position || "Searching...",
-        company: hunterData.data?.[0]?.company || "Searching...",
+        occupation: hunterData.data?.[0]?.position || "Not found",
+        company: hunterData.data?.[0]?.company || "Not found",
       }
     });
 
@@ -44,7 +44,7 @@ export async function searchPerson(query: string) {
         data: {
           company: hunterData.data[0].company,
           position: hunterData.data[0].position,
-          linkedin_url: hunterData.data[0].linkedin || "Searching...",
+          linkedin_url: hunterData.data[0].linkedin || "Not found",
         }
       });
     }
@@ -87,7 +87,7 @@ export async function searchPerson(query: string) {
 
 async function performWebSearch(query: string) {
   // Here we'd integrate with a search API
-  // For now, return placeholder
+  // For now, return placeholder data
   return [
     {
       title: `Search results for ${query}`,
