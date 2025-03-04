@@ -14,6 +14,8 @@ export const caseInfo = pgTable("case_info", {
   caseId: integer("case_id").notNull(),
   category: text("category").notNull(),
   data: jsonb("data").notNull(),
+  source: text("source"),
+  timestamp: text("timestamp").notNull().default(() => new Date().toISOString()),
 });
 
 export const insertCaseSchema = createInsertSchema(cases).pick({
@@ -26,6 +28,7 @@ export const insertCaseInfoSchema = createInsertSchema(caseInfo).pick({
   caseId: true,
   category: true,
   data: true,
+  source: true,
 });
 
 export type InsertCase = z.infer<typeof insertCaseSchema>;
@@ -34,10 +37,26 @@ export type InsertCaseInfo = z.infer<typeof insertCaseInfoSchema>;
 export type CaseInfo = typeof caseInfo.$inferSelect;
 
 export const categories = [
+  "personal_info",
   "usernames",
+  "emails",
   "passwords",
   "phones",
-  "social",
-  "dictionary",
+  "social_media",
+  "employment",
+  "education",
+  "domains",
+  "addresses",
+  "connections",
+  "documents",
   "notes"
 ] as const;
+
+export const infoTypes = {
+  personal_info: ["name", "age", "nationality", "occupation"],
+  social_media: ["platform", "username", "url", "bio"],
+  employment: ["company", "position", "period", "location"],
+  education: ["institution", "degree", "year"],
+  connections: ["name", "relationship", "platform"],
+  domains: ["domain", "registrar", "creation_date"],
+} as const;
