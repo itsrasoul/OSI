@@ -1,146 +1,82 @@
 import { apiRequest } from './queryClient';
 
-async function checkSocialPlatforms(username: string) {
-  const platforms = [
-    { name: 'GitHub', url: `https://github.com/${username}` },
-    { name: 'Twitter', url: `https://twitter.com/${username}` },
-    { name: 'LinkedIn', url: `https://linkedin.com/in/${username}` },
-    { name: 'Instagram', url: `https://instagram.com/${username}` },
-    { name: 'Medium', url: `https://medium.com/@${username}` },
-    { name: 'Dev.to', url: `https://dev.to/${username}` }
-  ];
-
-  return {
-    category: "social_media",
-    data: {
-      platform: "Multiple Platforms",
-      username: username,
-      possible_profiles: platforms.map(p => ({ platform: p.name, url: p.url })),
-      note: "Check these potential profile URLs manually"
-    }
-  };
-}
-
-async function performDomainLookup(query: string) {
-  const domain = query.includes('@') ? query.split('@')[1] : 
-                query.includes('.') ? query : null;
-
-  if (!domain) return null;
-
-  return {
-    category: "domains",
-    data: {
-      domain: domain,
-      whois_lookup: `https://who.is/whois/${domain}`,
-      dns_records: `https://dnsdumpster.com/`,
-      ssl_info: `https://crt.sh/?q=${domain}`,
-      note: "Use these tools to gather domain intelligence"
-    }
-  };
-}
-
-async function searchEmailBreaches(email: string) {
-  if (!email.includes('@')) return null;
-
-  return {
-    category: "search_results",
-    data: {
-      email: email,
-      breach_lookup: "https://haveibeenpwned.com/",
-      paste_search: "https://psbdmp.ws/",
-      note: "Check these databases for potential data breaches"
-    }
-  };
-}
-
-export async function searchPerson(query: string) {
+export function searchPerson(query: string) {
   try {
-    const findings = [];
     const username = query.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const findings = [];
 
-    // Basic information structure
+    // Social Media Intelligence
     findings.push({
-      category: "personal_info",
+      category: "social_media",
       data: {
-        query: query,
-        possible_name: query.includes('@') ? query.split('@')[0] : query,
-        note: "Starting point for investigation"
+        platform: "Multiple Platforms",
+        possible_profiles: [
+          { name: 'LinkedIn', url: `https://www.linkedin.com/search/results/all/?keywords=${encodeURIComponent(query)}` },
+          { name: 'Twitter', url: `https://twitter.com/search?q=${encodeURIComponent(query)}` },
+          { name: 'Facebook', url: `https://www.facebook.com/search/top?q=${encodeURIComponent(query)}` },
+          { name: 'Instagram', url: `https://www.instagram.com/${username}` },
+          { name: 'GitHub', url: `https://github.com/${username}` },
+          { name: 'Reddit', url: `https://www.reddit.com/search/?q=${encodeURIComponent(query)}` },
+        ],
+        note: "Check these platforms for potential profiles"
       }
     });
 
-    // Social media presence
-    findings.push(await checkSocialPlatforms(username));
-
-    // Domain information if applicable
-    const domainInfo = await performDomainLookup(query);
-    if (domainInfo) findings.push(domainInfo);
-
-    // Email breach check if applicable
-    const breachInfo = await searchEmailBreaches(query);
-    if (breachInfo) findings.push(breachInfo);
-
-    // Add search suggestions
+    // Data Breach Intelligence
     findings.push({
       category: "search_results",
       data: {
         query: query,
+        specialized_search: [
+          { name: 'Have I Been Pwned', url: 'https://haveibeenpwned.com' },
+          { name: 'DeHashed', url: 'https://dehashed.com' },
+          { name: 'Intelligence X', url: 'https://intelx.io' },
+          { name: 'Leak-Lookup', url: 'https://leak-lookup.com' },
+        ],
         search_engines: [
-          { name: "Google Dorks", url: `https://www.google.com/search?q=intext:"${query}" OR inurl:"${username}"` },
-          { name: "Yandex", url: `https://yandex.com/search/?text="${query}"` },
-          { name: "DuckDuckGo", url: `https://duckduckgo.com/?q="${query}"` }
+          { name: 'Google', url: `https://www.google.com/search?q=${encodeURIComponent(`"${query}" OR "${username}"`)}` },
+          { name: 'Bing', url: `https://www.bing.com/search?q=${encodeURIComponent(query)}` },
+          { name: 'DuckDuckGo', url: `https://duckduckgo.com/?q=${encodeURIComponent(query)}` },
+          { name: 'Yandex', url: `https://yandex.com/search/?text=${encodeURIComponent(query)}` },
         ],
-        archives: [
-          { name: "Wayback Machine", url: `https://web.archive.org/web/*/${query}*` },
-          { name: "Archive.today", url: `https://archive.today/` }
+        note: "Check these sources for potential data breaches and online presence"
+      }
+    });
+
+    // Domain Intelligence
+    if (query.includes('@') || query.includes('.')) {
+      const domain = query.includes('@') ? query.split('@')[1] : query;
+      findings.push({
+        category: "domains",
+        data: {
+          domain: domain,
+          tools: [
+            { name: 'WHOIS Lookup', url: `https://who.is/whois/${domain}` },
+            { name: 'DNS Dumpster', url: 'https://dnsdumpster.com' },
+            { name: 'SecurityTrails', url: `https://securitytrails.com/domain/${domain}/dns` },
+            { name: 'Certificate Search', url: `https://crt.sh/?q=${domain}` },
+          ],
+          note: "Use these tools to investigate domain information"
+        }
+      });
+    }
+
+    // Professional Intelligence
+    findings.push({
+      category: "employment",
+      data: {
+        tools: [
+          { name: 'Company House UK', url: 'https://find-and-update.company-information.service.gov.uk' },
+          { name: 'OpenCorporates', url: 'https://opencorporates.com' },
+          { name: 'LinkedIn Companies', url: `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(query)}` },
         ],
-        note: "Use these resources for deeper investigation"
+        note: "Check these sources for professional and company information"
       }
     });
 
     return findings;
   } catch (error) {
-    console.error("OSINT search failed:", error);
-    throw new Error("Failed to gather intelligence data");
+    console.error("OSINT search preparation failed:", error);
+    throw new Error("Failed to prepare intelligence gathering links");
   }
-}
-
-interface HunterResponse {
-  data: {
-    domain: string;
-    disposition: string;
-    pattern: string;
-    organization: string;
-    emails: Array<{
-      value: string;
-      type: string;
-      confidence: number;
-      sources: Array<{
-        domain: string;
-        uri: string;
-        extracted_on: string;
-      }>;
-      first_name: string | null;
-      last_name: string | null;
-      position: string | null;
-      seniority: string | null;
-      department: string | null;
-      linkedin: string | null;
-      twitter: string | null;
-      phone_number: string | null;
-    }>;
-  };
-  meta: {
-    results: number;
-    limit: number;
-    offset: number;
-    params: {
-      company: string;
-      domain: string;
-    };
-  };
-}
-
-async function performWebSearch(query: string) {
-  //This function is not used anymore.
-  return []
 }
