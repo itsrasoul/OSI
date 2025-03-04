@@ -8,7 +8,7 @@ export interface IStorage {
   getCases(): Promise<Case[]>;
   getCase(id: number): Promise<Case | undefined>;
   createCase(caseData: InsertCase): Promise<Case>;
-  
+
   // Case info operations
   getCaseInfo(caseId: number): Promise<CaseInfo[]>;
   createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo>;
@@ -37,7 +37,12 @@ export class MemStorage implements IStorage {
 
   async createCase(caseData: InsertCase): Promise<Case> {
     const id = this.currentCaseId++;
-    const newCase = { ...caseData, id };
+    const newCase = { 
+      ...caseData, 
+      id,
+      description: caseData.description || "",
+      status: caseData.status || "active"
+    };
     this.cases.set(id, newCase);
     this.caseInfo.set(id, []);
     return newCase;
@@ -49,11 +54,18 @@ export class MemStorage implements IStorage {
 
   async createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo> {
     const id = this.currentInfoId++;
-    const newInfo = { ...info, id };
-    
+    const timestamp = new Date().toISOString();
+
+    const newInfo: CaseInfo = {
+      ...info,
+      id,
+      timestamp,
+      source: info.source || "",
+    };
+
     const existingInfo = this.caseInfo.get(info.caseId) || [];
     this.caseInfo.set(info.caseId, [...existingInfo, newInfo]);
-    
+
     return newInfo;
   }
 }

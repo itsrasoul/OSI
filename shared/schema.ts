@@ -5,7 +5,7 @@ import { z } from "zod";
 export const cases = pgTable("cases", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  description: text("description"),
+  description: text("description").notNull(),
   status: text("status").notNull().default("active"),
 });
 
@@ -14,22 +14,17 @@ export const caseInfo = pgTable("case_info", {
   caseId: integer("case_id").notNull(),
   category: text("category").notNull(),
   data: jsonb("data").notNull(),
-  source: text("source"),
-  timestamp: text("timestamp").notNull().default(() => new Date().toISOString()),
+  source: text("source").notNull().default(""),
+  timestamp: text("timestamp").notNull(),
 });
 
-export const insertCaseSchema = createInsertSchema(cases).pick({
-  name: true,
-  description: true,
-  status: true,
-});
+export const insertCaseSchema = createInsertSchema(cases);
 
-export const insertCaseInfoSchema = createInsertSchema(caseInfo).pick({
-  caseId: true,
-  category: true,
-  data: true,
-  source: true,
-});
+export const insertCaseInfoSchema = createInsertSchema(caseInfo)
+  .omit({ timestamp: true })
+  .extend({
+    data: z.unknown(),
+  });
 
 export type InsertCase = z.infer<typeof insertCaseSchema>;
 export type Case = typeof cases.$inferSelect;

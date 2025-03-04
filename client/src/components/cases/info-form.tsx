@@ -20,48 +20,44 @@ interface InfoFormProps {
   category: string;
 }
 
+type FormData = {
+  rawText?: string;
+  source: string;
+  data: Record<string, string>;
+};
+
 export default function InfoForm({ caseId, category }: InfoFormProps) {
   const { toast } = useToast();
-  const form = useForm<InsertCaseInfo & { rawText?: string }>({
-    resolver: zodResolver(insertCaseInfoSchema),
+  const form = useForm<FormData>({
     defaultValues: {
-      caseId,
-      category,
-      data: {},
       source: "",
+      data: {},
     },
   });
 
   const createInfo = useMutation({
-    mutationFn: async (data: InsertCaseInfo) => {
-      const res = await apiRequest("POST", `/api/cases/${caseId}/info`, data);
+    mutationFn: async (values: FormData) => {
+      const data = category in infoTypes ? values.data : { content: values.rawText };
+      const info: InsertCaseInfo = {
+        caseId,
+        category,
+        data,
+        source: values.source,
+      };
+
+      const res = await apiRequest("POST", `/api/cases/${caseId}/info`, info);
       return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/cases/${caseId}/info`] });
       toast({ title: "Information added successfully" });
-      form.reset({ caseId, category, data: {}, source: "" });
+      form.reset();
     },
   });
 
-  const handleSubmit = (values: InsertCaseInfo & { rawText?: string }) => {
-    const { rawText, ...rest } = values;
-    let data: any = {};
-
-    // If the category has predefined fields, use them
-    if (category in infoTypes) {
-      data = form.getValues();
-    } else {
-      // For categories without predefined fields, use the raw text
-      data = { content: rawText };
-    }
-
-    createInfo.mutate({ ...rest, data });
-  };
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit((data) => createInfo.mutate(data))} className="space-y-4">
         {category in infoTypes ? (
           // Render structured form fields for categories with predefined fields
           <>
