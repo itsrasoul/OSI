@@ -12,7 +12,7 @@ function Router() {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-8">
+      <main className="flex-1 overflow-auto pt-[72px] lg:pt-0 px-4 lg:px-8 py-8">
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/cases" component={CasesList} />
