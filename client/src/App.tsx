@@ -11,11 +11,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 function Router() {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen w-full">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1">
-          <main className="container mx-auto max-w-[1800px] p-4 md:p-6 lg:p-8">
+      <div className="flex-1 flex flex-col w-full">
+        <ScrollArea className="flex-1 w-full">
+          <main className="w-full max-w-[2000px] mx-auto p-4 md:p-6 lg:p-8">
             <Switch>
               <Route path="/" component={Home} />
               <Route path="/cases" component={CasesList} />
