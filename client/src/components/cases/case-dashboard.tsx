@@ -43,7 +43,9 @@ interface CaseDashboardProps {
 export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
   // Fetch all cases to get stats
   const { data: cases } = useQuery<Case[]>({
-    queryKey: ['/api/cases']
+    queryKey: ['/api/cases'],
+    // Refresh data every 5 seconds
+    refetchInterval: 5000
   });
 
   // Calculate case statistics - excluding closed cases
@@ -63,9 +65,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
   // Calculate verification percentage
   const calculateVerificationProgress = () => {
     if (!caseInfo?.length) return 0;
-    const verifiedCount = caseInfo.filter(info => 
-      info.verificationStatus === 'verified' && info.source
-    ).length;
+    const verifiedCount = caseInfo.filter(info => info.source).length;
     return Math.round((verifiedCount / caseInfo.length) * 100);
   };
 
@@ -292,7 +292,7 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
             <div className="space-y-8">
               {caseInfo?.slice(-5).map((info, index) => {
                 const Icon = categoryIcons[info.category] || FileText;
-                const isVerified = info.verificationStatus === 'verified' && info.source;
+                const isVerified = info.source;
                 return (
                   <motion.div
                     key={info.id}
@@ -309,9 +309,6 @@ export default function CaseDashboard({ caseInfo }: CaseDashboardProps) {
                         {info.category.replace(/_/g, " ")}
                       </p>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-xs">
-                          {info.verificationStatus}
-                        </Badge>
                         {isVerified && (
                           <Badge variant="secondary" className="text-xs flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />

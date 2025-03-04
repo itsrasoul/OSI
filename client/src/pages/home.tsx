@@ -10,7 +10,9 @@ import { Plus } from "lucide-react";
 
 export default function Home() {
   const { data: cases } = useQuery<Case[]>({ 
-    queryKey: ["/api/cases"]
+    queryKey: ["/api/cases"],
+    // Refresh data every 5 seconds
+    refetchInterval: 5000,
   });
 
   return (
@@ -33,7 +35,7 @@ export default function Home() {
       <ScrollArea className="h-[calc(100vh-12rem)]">
         <div className="space-y-8 pr-4">
           {/* Main Dashboard */}
-          <CaseDashboard caseInfo={[]} />
+          <CaseDashboard caseInfo={cases || []} />
 
           {/* Recent Cases */}
           <Card>
