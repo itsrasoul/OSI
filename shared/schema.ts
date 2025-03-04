@@ -10,6 +10,7 @@ export const cases = sqliteTable("cases", {
   priority: text("priority").notNull().default("medium"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),
+  imageUrl: text("image_url"),
 });
 
 export const caseInfo = sqliteTable("case_info", {

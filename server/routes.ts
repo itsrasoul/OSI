@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import { Express } from "express";
 import { createServer } from "http";
 import { storage as dbStorage } from "./storage";
 import { insertCaseSchema, insertCaseInfoSchema } from "@shared/schema";
@@ -89,6 +89,9 @@ async function cleanupFiles(files: string[]) {
 ensureDirectories();
 
 export async function registerRoutes(app: Express) {
+  // Ensure uploads directory exists
+  await fs.mkdir('./uploads/cases', { recursive: true });
+
   // Cases endpoints
   app.get("/api/cases", async (_req, res) => {
     const cases = await dbStorage.getCases();
@@ -245,6 +248,37 @@ export async function registerRoutes(app: Express) {
         error: process.env.NODE_ENV === 'development' ? error : undefined
       });
     }
+  });
+
+  // Case image upload endpoint
+  app.post("/api/cases/:id/image", upload.single('image'), async (req, res) => {
+    const id = parseInt(req.params.id);
+    const file = req.file;
+
+    if (!file) {
+      res.status(400).json({ message: "No image file provided" });
+      return;
+    }
+
+    const case_ = await dbStorage.getCase(id);
+    if (!case_) {
+      res.status(404).json({ message: "Case not found" });
+      return;
+    }
+
+    // If there's an existing image, delete it
+    if (case_.imageUrl) {
+      const oldImagePath = path.join(process.cwd(), case_.imageUrl);
+      try {
+        await fs.unlink(oldImagePath);
+      } catch (error) {
+        console.error('Failed to delete old image:', error);
+      }
+    }
+
+    const imageUrl = `/uploads/cases/${file.filename}`;
+    const updatedCase = await dbStorage.updateCase(id, { imageUrl });
+    res.json(updatedCase);
   });
 
   // Serve uploaded files

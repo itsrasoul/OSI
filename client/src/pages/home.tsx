@@ -3,9 +3,11 @@ import { Case } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Crosshair } from "lucide-react";
 import CaseForm from "@/components/cases/case-form";
 import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Home() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -13,15 +15,23 @@ export default function Home() {
   const { data: cases = [], isLoading } = useQuery<Case[]>({
     queryKey: ["/api/cases"],
     queryFn: async () => {
-      const response = await fetch("/api/cases");
-      if (!response.ok) {
-        throw new Error("Failed to fetch cases");
+      try {
+        const response = await apiRequest("GET", "/api/cases");
+        const data = await response.json();
+        if (!Array.isArray(data)) {
+          console.error("Expected array of cases, got:", data);
+          return [];
+        }
+        return data;
+      } catch (error) {
+        console.error("Error fetching cases:", error);
+        return [];
       }
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
     },
-    staleTime: 30000,
-    retry: 1,
+    staleTime: 5000,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
+    retry: 2,
     initialData: []
   });
 
@@ -66,11 +76,22 @@ export default function Home() {
               <div className="space-y-4">
                 {cases.slice(0, 5).map((case_) => (
                   <Link key={case_.id} href={`/cases/${case_.id}`}>
-                    <div className="p-4 rounded-lg bg-card/50 hover:bg-card/80 cursor-pointer">
-                      <h3 className="font-medium">{case_.name}</h3>
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {case_.description}
-                      </p>
+                    <div className="p-4 rounded-lg bg-card/50 hover:bg-card/80 cursor-pointer flex items-start gap-4">
+                      <Avatar className="h-12 w-12 border-2 border-primary/20">
+                        {case_.imageUrl ? (
+                          <AvatarImage src={case_.imageUrl} alt={case_.name} />
+                        ) : (
+                          <AvatarFallback className="bg-primary/5">
+                            <Crosshair className="h-6 w-6 text-primary" />
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium truncate">{case_.name}</h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {case_.description}
+                        </p>
+                      </div>
                     </div>
                   </Link>
                 ))}

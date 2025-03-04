@@ -10,6 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   FileText,
   AlertCircle,
@@ -17,7 +18,9 @@ import {
   Globe,
   Building,
   Search,
-  Loader2
+  Loader2,
+  Crosshair,
+  Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -328,9 +331,66 @@ export default function CaseDetail() {
         transition={{ delay: 0.2 }}
       >
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-4xl font-bold">{case_?.name}</h1>
-            <p className="text-muted-foreground">{case_?.description}</p>
+          <div className="flex items-center gap-6">
+            <div className="relative group">
+              <Avatar className="h-20 w-20 border-2 border-primary/20">
+                {case_?.imageUrl ? (
+                  <AvatarImage src={case_.imageUrl} alt={case_.name} />
+                ) : (
+                  <AvatarFallback className="bg-primary/5">
+                    <Crosshair className="h-10 w-10 text-primary" />
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <label 
+                htmlFor="avatar-upload" 
+                className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
+              >
+                <Upload className="h-6 w-6 text-white" />
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const formData = new FormData();
+                  formData.append('image', file);
+
+                  try {
+                    const response = await fetch(`/api/cases/${caseId}/image`, {
+                      method: 'POST',
+                      body: formData,
+                    });
+
+                    if (!response.ok) {
+                      throw new Error('Failed to upload image');
+                    }
+
+                    const data = await response.json();
+                    queryClient.invalidateQueries({ queryKey: [`/api/cases/${caseId}`] });
+                    
+                    toast({
+                      title: "Image uploaded",
+                      description: "Case profile image has been updated"
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Upload failed",
+                      description: "Failed to upload image. Please try again.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+              />
+            </div>
+            <div className="space-y-2">
+              <h1 className="text-3xl sm:text-4xl font-bold">{case_?.name}</h1>
+              <p className="text-muted-foreground">{case_?.description}</p>
+            </div>
           </div>
           {case_ && (
             <CaseControls
