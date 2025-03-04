@@ -81,10 +81,15 @@ export class DatabaseStorage implements IStorage {
     if (!Number.isInteger(caseId) || caseId < 1) {
       return [];
     }
-    return db
+    const results = await db
       .select()
       .from(caseInfo)
       .where(eq(caseInfo.caseId, caseId));
+    
+    return results.map(info => ({
+      ...info,
+      data: JSON.parse(info.data as string)
+    }));
   }
 
   async createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo> {
@@ -97,6 +102,7 @@ export class DatabaseStorage implements IStorage {
       .insert(caseInfo)
       .values({
         ...info,
+        data: JSON.stringify(info.data),
         timestamp,
       })
       .returning();

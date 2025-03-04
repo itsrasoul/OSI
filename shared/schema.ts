@@ -1,9 +1,9 @@
-import { pgTable, text, serial, integer, jsonb } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const cases = pgTable("cases", {
-  id: serial("id").primaryKey(),
+export const cases = sqliteTable("cases", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   description: text("description").notNull(),
   status: text("status").notNull().default("active"),
@@ -12,11 +12,11 @@ export const cases = pgTable("cases", {
   updatedAt: text("updated_at").notNull(),
 });
 
-export const caseInfo = pgTable("case_info", {
-  id: serial("id").primaryKey(),
+export const caseInfo = sqliteTable("case_info", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   caseId: integer("case_id").notNull(),
   category: text("category").notNull(),
-  data: jsonb("data").notNull(),
+  data: text("data").notNull(), // Store JSON as text in SQLite
   source: text("source").notNull().default(""),
   confidence: text("confidence").notNull().default("medium"),
   verificationStatus: text("verification_status").notNull().default("unverified"),
@@ -24,8 +24,8 @@ export const caseInfo = pgTable("case_info", {
 });
 
 // New table for storing case images
-export const caseImages = pgTable("case_images", {
-  id: serial("id").primaryKey(),
+export const caseImages = sqliteTable("case_images", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
   caseId: integer("case_id").notNull(),
   fileName: text("file_name").notNull(),
   fileSize: integer("file_size").notNull(),

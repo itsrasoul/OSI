@@ -16,7 +16,8 @@ import {
   Users,
   Globe,
   Building,
-  Search
+  Search,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ const pageVariants = {
 };
 
 export default function CaseDetail() {
-  const { id } = useParams();
+  const { id = "" } = useParams();
   const caseId = parseInt(id);
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,17 +41,36 @@ export default function CaseDetail() {
   const [searchResults, setSearchResults] = useState<Array<{category: string, data: any}>>([]);
   const [activeSearch, setActiveSearch] = useState<string | null>(null);
 
-  if (isNaN(caseId) || caseId < 1) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <h1 className="text-2xl font-bold text-red-500">Invalid Case ID</h1>
-        <p className="mt-2 text-muted-foreground">The requested case could not be found.</p>
-        <Button asChild>
-          <Link href="/cases">Back to Cases</Link>
-        </Button>
-      </div>
-    );
-  }
+  const { data: case_, isLoading: isCaseLoading, error: caseError } = useQuery<Case>({
+    queryKey: [`/api/cases/${caseId}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/cases/${caseId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch case");
+      }
+      return response.json();
+    },
+    retry: 1,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+    enabled: !isNaN(caseId) && caseId > 0
+  });
+
+  const { data: caseInfo = [], isLoading: isInfoLoading } = useQuery<CaseInfo[]>({
+    queryKey: [`/api/cases/${caseId}/info`],
+    queryFn: async () => {
+      const response = await fetch(`/api/cases/${caseId}/info`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch case info");
+      }
+      return response.json();
+    },
+    retry: 1,
+    enabled: Boolean(case_) && !isNaN(caseId) && caseId > 0,
+    staleTime: 30000,
+    refetchOnWindowFocus: false,
+    initialData: []
+  });
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -63,13 +83,43 @@ export default function CaseDetail() {
     };
   }, []);
 
-  const { data: case_ } = useQuery<Case>({
-    queryKey: [`/api/cases/${id}`]
-  });
+  if (isNaN(caseId) || caseId < 1) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <h1 className="text-2xl font-bold text-red-500">Invalid Case ID</h1>
+        <p className="mt-2 text-muted-foreground">The requested case could not be found.</p>
+        <Button asChild className="mt-4">
+          <Link href="/cases">Back to Cases</Link>
+        </Button>
+      </div>
+    );
+  }
 
-  const { data: caseInfo } = useQuery<CaseInfo[]>({
-    queryKey: [`/api/cases/${id}/info`]
-  });
+  if (isCaseLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+        <p className="mt-2 text-muted-foreground">Loading case information...</p>
+      </div>
+    );
+  }
+
+  if (caseError || !case_) {
+    const errorMessage = caseError instanceof Error 
+      ? caseError.message 
+      : "The requested case could not be found.";
+      
+    return (
+      <div className="container mx-auto px-4 py-8 text-center">
+        <AlertCircle className="h-8 w-8 mx-auto text-red-500" />
+        <h1 className="text-2xl font-bold text-red-500 mt-2">Case Not Found</h1>
+        <p className="mt-2 text-muted-foreground">{errorMessage}</p>
+        <Button asChild className="mt-4">
+          <Link href="/cases">Back to Cases</Link>
+        </Button>
+      </div>
+    );
+  }
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
@@ -230,7 +280,7 @@ export default function CaseDetail() {
         </div>
 
         <div className="bg-card/50 rounded-md p-4">
-          {typeof info.data === 'object' && !('content' in info.data) ? (
+          {typeof info.data === 'object' && info.data !== null ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {Object.entries(info.data).map(([key, value]) => (
                 <div key={key} className="flex gap-2">
@@ -243,7 +293,7 @@ export default function CaseDetail() {
             </div>
           ) : (
             <p className="whitespace-pre-wrap text-muted-foreground">
-              {info.data.content}
+              {typeof info.data === 'string' ? info.data : JSON.stringify(info.data)}
             </p>
           )}
         </div>
