@@ -43,6 +43,8 @@ export default function InfoForm({ caseId, category }: InfoFormProps) {
         category,
         data,
         source: values.source,
+        // Set verification status based on source presence
+        verificationStatus: values.source ? 'verified' : 'unverified'
       };
 
       const res = await apiRequest("POST", `/api/cases/${caseId}/info`, info);
@@ -106,7 +108,7 @@ export default function InfoForm({ caseId, category }: InfoFormProps) {
               <FormControl>
                 <Input 
                   {...field}
-                  placeholder="Where did you find this information? (Optional)"
+                  placeholder="Where did you find this information? Adding source will mark as verified"
                 />
               </FormControl>
             </FormItem>
