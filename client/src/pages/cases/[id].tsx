@@ -1,8 +1,10 @@
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "wouter";
 import { Case, CaseInfo, categories } from "@shared/schema";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import InfoForm from "@/components/cases/info-form";
+import CaseDashboard from "@/components/cases/case-dashboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+
+const pageVariants = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -20 }
+};
 
 export default function CaseDetail() {
   const { id } = useParams();
@@ -193,8 +201,19 @@ export default function CaseDetail() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="border-b pb-4">
+    <motion.div 
+      className="space-y-6"
+      variants={pageVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+    >
+      <motion.div 
+        className="border-b pb-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+      >
         <div className="flex items-center gap-2">
           <h1 className="text-4xl font-bold">{case_?.name}</h1>
           <Badge variant="outline">{case_?.status}</Badge>
@@ -203,9 +222,14 @@ export default function CaseDetail() {
           )}
         </div>
         <p className="text-muted-foreground mt-2">{case_?.description}</p>
-      </div>
+      </motion.div>
 
-      <div className="max-w-2xl mx-auto space-y-4">
+      <motion.div 
+        className="max-w-2xl mx-auto space-y-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
         <Card className="border-2 border-primary/20">
           <CardContent className="pt-6">
             <div className="flex gap-2">
@@ -227,6 +251,15 @@ export default function CaseDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Investigation Dashboard */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <CaseDashboard caseInfo={caseInfo} />
+        </motion.div>
 
         {/* Google Custom Search Results */}
         <Card>
@@ -289,135 +322,153 @@ export default function CaseDetail() {
 
         {/* Social Media Results */}
         {searchResults.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Social Media Profiles
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[200px] pr-4">
-                <div className="space-y-4">
-                  {searchResults
-                    .filter(result => result.category === "social_media")
-                    .map((result, index) => (
-                      <div key={index} className="space-y-2">
-                        <div className="whitespace-pre-wrap text-sm">
-                          {result.data.profiles?.split('\n').map((profile: string, i: number) => (
-                            <div key={i} className="flex items-center gap-2 py-1">
-                              <a 
-                                href={profile.split(': ')[1]}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-500 hover:underline"
-                              >
-                                {profile.split(': ')[0]}
-                              </a>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Additional Info */}
-        {searchResults.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Additional Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-[300px] pr-4">
-                <div className="space-y-4">
-                  {searchResults
-                    .filter(result => !["social_media", "search_results"].includes(result.category))
-                    .map((result, index) => (
-                      <Card key={index} className="p-4">
-                        <div className="space-y-2">
-                          <h3 className="text-lg font-semibold capitalize">
-                            {result.category.replace(/_/g, " ")}
-                          </h3>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {Object.entries(result.data).map(([key, value]) => (
-                              <div key={key} className="flex gap-2">
-                                <span className="font-medium capitalize min-w-[120px]">
-                                  {key.replace(/_/g, " ")}:
-                                </span>
-                                <span className="text-muted-foreground">{value?.toString()}</span>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Social Media Profiles
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[200px] pr-4">
+                  <div className="space-y-4">
+                    {searchResults
+                      .filter(result => result.category === "social_media")
+                      .map((result, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="whitespace-pre-wrap text-sm">
+                            {result.data.profiles?.split('\n').map((profile: string, i: number) => (
+                              <div key={i} className="flex items-center gap-2 py-1">
+                                <a 
+                                  href={profile.split(': ')[1]}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 hover:underline"
+                                >
+                                  {profile.split(': ')[0]}
+                                </a>
                               </div>
                             ))}
                           </div>
                         </div>
-                      </Card>
-                    ))}
-                </div>
-              </ScrollArea>
-            </CardContent>
-          </Card>
+                      ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
-      </div>
 
-      <Tabs defaultValue={categories[0]} className="space-y-6">
-        <ScrollArea className="w-full whitespace-nowrap rounded-md border">
-          <TabsList className="w-full p-1">
-            {categories.map((category) => (
-              <TabsTrigger key={category} value={category} className="capitalize">
-                {category.replace(/_/g, " ")}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </ScrollArea>
+        {/* Additional Info */}
+        {searchResults.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5" />
+                  Additional Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-4">
+                    {searchResults
+                      .filter(result => !["social_media", "search_results"].includes(result.category))
+                      .map((result, index) => (
+                        <Card key={index} className="p-4">
+                          <div className="space-y-2">
+                            <h3 className="text-lg font-semibold capitalize">
+                              {result.category.replace(/_/g, " ")}
+                            </h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {Object.entries(result.data).map(([key, value]) => (
+                                <div key={key} className="flex gap-2">
+                                  <span className="font-medium capitalize min-w-[120px]">
+                                    {key.replace(/_/g, " ")}:
+                                  </span>
+                                  <span className="text-muted-foreground">{value?.toString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </motion.div>
 
-        {categories.map((category) => (
-          <TabsContent key={category} value={category}>
-            <div className="grid gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <InfoForm caseId={caseId} category={category} />
-                </CardContent>
-              </Card>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        <Tabs defaultValue={categories[0]} className="space-y-6">
+          <ScrollArea className="w-full whitespace-nowrap rounded-md border">
+            <TabsList className="w-full p-1">
+              {categories.map((category) => (
+                <TabsTrigger key={category} value={category} className="capitalize">
+                  {category.replace(/_/g, " ")}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </ScrollArea>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[600px] pr-4">
-                    {caseInfo?.filter(info => info.category === category).length === 0 ? (
-                      <div className="flex items-center justify-center h-32 text-muted-foreground">
-                        <AlertCircle className="h-4 w-4 mr-2" />
-                        No information found
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {caseInfo
-                          ?.filter((info) => info.category === category)
-                          .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                          .map((info) => (
-                            <Card key={info.id} className="p-4">
-                              {renderInfoData(info)}
-                            </Card>
-                          ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
+          {categories.map((category) => (
+            <TabsContent key={category} value={category}>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Add {category.replace(/_/g, " ")}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <InfoForm caseId={caseId} category={category} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Existing {category.replace(/_/g, " ")}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[600px] pr-4">
+                      {caseInfo?.filter(info => info.category === category).length === 0 ? (
+                        <div className="flex items-center justify-center h-32 text-muted-foreground">
+                          <AlertCircle className="h-4 w-4 mr-2" />
+                          No information found
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {caseInfo
+                            ?.filter((info) => info.category === category)
+                            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                            .map((info) => (
+                              <Card key={info.id} className="p-4">
+                                {renderInfoData(info)}
+                              </Card>
+                            ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </motion.div>
+    </motion.div>
   );
 }
