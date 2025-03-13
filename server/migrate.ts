@@ -1,11 +1,18 @@
-import { db } from './db';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
+import * as schema from "@shared/schema";
 import fs from 'fs/promises';
 import path from 'path';
-import type { Database } from 'better-sqlite3';
-import BetterSQLite3 from 'better-sqlite3';
 
-// Get the SQLite client from the Drizzle wrapper
-const sqlite = (db as any).$client as Database;
+// Use mounted storage on Render.com or local data directory
+const DATA_DIR = process.env.NODE_ENV === 'production' ? '/data' : './data';
+
+// Initialize database connection
+const dbPath = path.join(DATA_DIR, 'db.sqlite');
+console.log(`Using database at: ${dbPath}`);
+
+const sqlite = new Database(dbPath);
+const db = drizzle(sqlite, { schema });
 
 async function runMigrations() {
   console.log('Running migrations...');
@@ -98,32 +105,10 @@ async function runMigrations() {
   }
 }
 
-// Verify database state after migrations
-async function verifyDatabaseState() {
-  try {
-    // Check if tables exist
-    const tables = [
-      'cases',
-      'case_info',
-      'case_images',
-      '_migrations'
-    ];
-
-    for (const table of tables) {
-      const exists = sqlite.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`).get(table);
-      console.log(`Table ${table}: ${exists ? 'exists' : 'does not exist'}`);
-    }
-  } catch (error) {
-    console.error('Error verifying database state:', error);
-    throw error;
-  }
-}
-
-// Run migrations and verify state
+// Run migrations
 (async () => {
   try {
     await runMigrations();
-    await verifyDatabaseState();
   } catch (error) {
     console.error('Failed to initialize database:', error);
     process.exit(1);
