@@ -6,11 +6,12 @@ const DATA_DIR = isProduction ? '/data' : './data';
 
 export default {
   schema: "./shared/schema.ts",
-  out: "./drizzle",
+  out: "./migrations",
   driver: 'better-sqlite',
   dbCredentials: {
     url: resolve(DATA_DIR, 'db.sqlite')
   },
   verbose: true,
-  strict: true
+  strict: true,
+  tablesFilter: ["!_*"]
 } satisfies Config;
