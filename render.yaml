@@ -3,7 +3,7 @@ services:
     name: osi-app
     env: node
     plan: starter
-    buildCommand: npm ci && npm run build
+    buildCommand: mkdir -p /data && npm ci && npm run build
     startCommand: node dist/index.js
     envVars:
       - key: NODE_ENV
