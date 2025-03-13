@@ -8,8 +8,13 @@ import fs from 'fs';
 const DATA_DIR = process.env.NODE_ENV === 'production' ? '/data' : './data';
 
 // Ensure the data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+try {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o777 });
+  }
+} catch (err: any) {
+  console.warn(`Warning: Could not create data directory: ${err?.message || err}`);
+  // Continue anyway as the directory might already exist or be mounted
 }
 
 const dbPath = path.join(DATA_DIR, 'db.sqlite');
