@@ -1,0 +1,17 @@
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "-ms-zoom",
+          "-moz-user-select",
+          "-webkit-text-size-adjust"
+        ]
+      }
+    ]
+  }
+}

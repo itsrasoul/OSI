@@ -369,5 +369,10 @@ export async function registerRoutes(app: Express) {
   // Serve uploaded files
   app.use('/uploads', express.static('uploads'));
 
+  // Add health check endpoint
+  app.get('/api/health', (_req, res) => {
+    res.status(200).json({ status: 'healthy' });
+  });
+
   return createServer(app);
 }

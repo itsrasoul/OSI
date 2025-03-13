@@ -4,21 +4,32 @@ import * as schema from "@shared/schema";
 import path from 'path';
 import fs from 'fs';
 
+// Use mounted storage on Render.com or local data directory
+const DATA_DIR = process.env.NODE_ENV === 'production' ? '/data' : './data';
+
 // Ensure the data directory exists
-const DATA_DIR = './data';
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
 
-const sqlite = new Database(path.join(DATA_DIR, 'db.sqlite'));
+const dbPath = path.join(DATA_DIR, 'db.sqlite');
+console.log(`Using database at: ${dbPath}`);
+
+const sqlite = new Database(dbPath);
 
 // Enable foreign keys
 sqlite.exec('PRAGMA foreign_keys = ON;');
 
-// For development, enable verbose logging
+// For development, enable WAL mode
 if (process.env.NODE_ENV === 'development') {
   sqlite.pragma('journal_mode = WAL'); // Better concurrency
+} else {
+  // For production, use DELETE journal mode which is more reliable for cloud environments
+  sqlite.pragma('journal_mode = DELETE');
 }
+
+// Set busy timeout to handle concurrent connections
+sqlite.pragma('busy_timeout = 5000');
 
 export const db = drizzle(sqlite, { schema });
 
