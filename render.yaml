@@ -6,9 +6,10 @@ services:
     buildCommand: |
       mkdir -p /data && 
       mkdir -p /uploads &&
-      chmod 777 /data && 
-      chmod 777 /uploads &&
-      npm ci --include=dev && 
+      chmod -R 777 /data && 
+      chmod -R 777 /uploads &&
+      npm ci && 
+      npm run db:push &&
       NODE_ENV=production npm run build
     startCommand: node dist/index.js
     envVars:

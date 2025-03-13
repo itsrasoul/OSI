@@ -10,7 +10,7 @@
     "check": "tsc",
     "db:push": "drizzle-kit generate:sqlite",
     "migrate": "tsx server/migrate.ts",
-    "postinstall": "npm run migrate && npm run build"
+    "postinstall": "npm run migrate"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -94,7 +94,8 @@
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
     "zod": "^3.23.8",
-    "zod-validation-error": "^3.4.0"
+    "zod-validation-error": "^3.4.0",
+    "react-query": "^3.39.3"
   },
   "devDependencies": {
     "@replit/vite-plugin-cartographer": "^0.0.4",
