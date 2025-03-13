@@ -9,7 +9,7 @@ export default {
   out: "./migrations",
   driver: 'better-sqlite',
   dbCredentials: {
-    url: resolve(DATA_DIR, 'db.sqlite')
+    url: process.env.DATABASE_URL || resolve(DATA_DIR, 'db.sqlite')
   },
   verbose: true,
   strict: true,

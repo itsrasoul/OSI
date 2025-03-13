@@ -6,8 +6,8 @@ services:
     buildCommand: |
       mkdir -p /data && 
       chmod 777 /data && 
-      npm ci --production=false && 
-      npm run build
+      npm ci --include=dev && 
+      NODE_ENV=production npm run build
     startCommand: node dist/index.js
     envVars:
       - key: NODE_ENV
@@ -16,6 +16,8 @@ services:
         value: 10000
       - key: SESSION_SECRET
         generateValue: true
+      - key: DATABASE_URL
+        value: /data/db.sqlite
     healthCheckPath: /api/health
     autoDeploy: true
     disk:
