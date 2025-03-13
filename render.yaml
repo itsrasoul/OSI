@@ -7,17 +7,23 @@ services:
       mkdir -p /data && 
       mkdir -p /uploads &&
       mkdir -p ./data &&
-      chmod -R 777 /data && 
-      chmod -R 777 /uploads &&
+      mkdir -p ./uploads &&
+      chmod -R 777 /data || true && 
+      chmod -R 777 /uploads || true &&
       chmod -R 777 ./data &&
+      chmod -R 777 ./uploads &&
       npm ci &&
       npm run db:push &&
       NODE_ENV=production npm run build
     startCommand: |
       mkdir -p /data || true &&
       mkdir -p /uploads || true &&
+      mkdir -p ./data &&
+      mkdir -p ./uploads &&
       chmod -R 777 /data || true &&
       chmod -R 777 /uploads || true &&
+      chmod -R 777 ./data &&
+      chmod -R 777 ./uploads &&
       node dist/index.js
     envVars:
       - key: NODE_ENV

@@ -7,17 +7,39 @@ import fs from 'fs';
 // Use mounted storage on Render.com or local data directory
 const DATA_DIR = process.env.NODE_ENV === 'production' ? '/data' : './data';
 
-// Ensure the data directory exists
-try {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true, mode: 0o777 });
+function ensureDirectoryExists(dir: string) {
+  try {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true, mode: 0o777 });
+    }
+    // Test write access
+    const testFile = path.join(dir, '.write-test');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    return true;
+  } catch (err: any) {
+    console.warn(`Warning: Directory ${dir} is not writable: ${err?.message || err}`);
+    return false;
   }
-} catch (err: any) {
-  console.warn(`Warning: Could not create data directory: ${err?.message || err}`);
-  // Continue anyway as the directory might already exist or be mounted
 }
 
-const dbPath = path.join(DATA_DIR, 'db.sqlite');
+// Try both absolute and relative paths
+const dirs = [DATA_DIR, './data'];
+let usableDir = null;
+
+for (const dir of dirs) {
+  if (ensureDirectoryExists(dir)) {
+    usableDir = dir;
+    break;
+  }
+}
+
+if (!usableDir) {
+  console.error('Fatal: Could not find or create a writable data directory');
+  process.exit(1);
+}
+
+const dbPath = path.join(usableDir, 'db.sqlite');
 console.log(`Using database at: ${dbPath}`);
 
 const sqlite = new Database(dbPath);
