@@ -11,14 +11,14 @@ const DATA_DIR = process.env.NODE_ENV === 'production' ? '/data' : './data';
 const dbPath = path.join(DATA_DIR, 'db.sqlite');
 console.log(`Using database at: ${dbPath}`);
 
-const sqlite = new Database(dbPath);
-const db = drizzle(sqlite, { schema });
-
 async function runMigrations() {
   console.log('Running migrations...');
 
   // Ensure the data directory exists
   await fs.mkdir(DATA_DIR, { recursive: true });
+
+  const sqlite = new Database(dbPath);
+  const db = drizzle(sqlite, { schema });
 
   try {
     // First, check if the migrations table exists
