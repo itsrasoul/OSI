@@ -17,6 +17,9 @@ const db = drizzle(sqlite, { schema });
 async function runMigrations() {
   console.log('Running migrations...');
 
+  // Ensure the data directory exists
+  await fs.mkdir(DATA_DIR, { recursive: true });
+
   try {
     // First, check if the migrations table exists
     try {
