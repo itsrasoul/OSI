@@ -47,7 +47,8 @@ export default function CaseDetail() {
   const { data: case_, isLoading: isCaseLoading, error: caseError } = useQuery<Case>({
     queryKey: [`/api/cases/${caseId}`],
     queryFn: async () => {
-      const response = await fetch(`/api/cases/${caseId}`);
+      const baseUrl = import.meta.env.VITE_API_BASE || '';
+      const response = await fetch(`${baseUrl}/api/cases/${caseId}`);
       if (!response.ok) {
         throw new Error("Failed to fetch case");
       }
@@ -62,7 +63,8 @@ export default function CaseDetail() {
   const { data: caseInfo = [], isLoading: isInfoLoading } = useQuery<CaseInfo[]>({
     queryKey: [`/api/cases/${caseId}/info`],
     queryFn: async () => {
-      const response = await fetch(`/api/cases/${caseId}/info`);
+      const baseUrl = import.meta.env.VITE_API_BASE || '';
+      const response = await fetch(`${baseUrl}/api/cases/${caseId}/info`);
       if (!response.ok) {
         throw new Error("Failed to fetch case info");
       }
@@ -361,7 +363,8 @@ export default function CaseDetail() {
                   formData.append('image', file);
 
                   try {
-                    const response = await fetch(`/api/cases/${caseId}/image`, {
+                    const baseUrl = import.meta.env.VITE_API_BASE || '';
+                    const response = await fetch(`${baseUrl}/api/cases/${caseId}/image`, {
                       method: 'POST',
                       body: formData,
                     });

@@ -35,7 +35,8 @@ export default function SearchCommand({ caseId, onResultFound }: SearchCommandPr
   }, []);
 
   const handleExport = async () => {
-    const findings = await fetch(`/api/cases/${caseId}/info`).then(res => res.json());
+    const baseUrl = import.meta.env.VITE_API_BASE || '';
+    const findings = await fetch(`${baseUrl}/api/cases/${caseId}/info`).then(res => res.json());
     const jsonStr = JSON.stringify(findings, null, 2);
     const dataUrl = `data:text/json;charset=utf-8,${encodeURIComponent(jsonStr)}`;
     const link = document.createElement('a');

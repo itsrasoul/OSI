@@ -58,7 +58,8 @@ export function ImageGallery({ caseId }: ImageGalleryProps) {
       formData.append('image', file);
       formData.append('caseId', caseId.toString());
 
-      const response = await fetch('/api/cases/images/upload', {
+      const baseUrl = import.meta.env.VITE_API_BASE || '';
+      const response = await fetch(`${baseUrl}/api/cases/images/upload`, {
         method: 'POST',
         body: formData
       });
