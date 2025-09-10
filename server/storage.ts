@@ -1,51 +1,97 @@
 import { 
+  users, type User, type InsertUser,
   cases, type Case, type InsertCase,
   caseInfo, type CaseInfo, type InsertCaseInfo,
   caseImages, type CaseImage, type InsertCaseImage,
   caseDocuments, type CaseDocument, type InsertCaseDocument
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
+  // User operations
+  getUser(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+
   // Case operations
-  getCases(): Promise<Case[]>;
-  getCase(id: number): Promise<Case | undefined>;
+  getCases(userId: number): Promise<Case[]>;
+  getCase(id: number, userId: number): Promise<Case | undefined>;
   createCase(caseData: InsertCase): Promise<Case>;
-  updateCase(id: number, data: Partial<Case>): Promise<Case>;
-  deleteCase(id: number): Promise<void>;
+  updateCase(id: number, userId: number, data: Partial<Case>): Promise<Case>;
+  deleteCase(id: number, userId: number): Promise<void>;
 
   // Case info operations
-  getCaseInfo(caseId: number): Promise<CaseInfo[]>;
+  getCaseInfo(caseId: number, userId: number): Promise<CaseInfo[]>;
   createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo>;
 
   // Case image operations
-  getCaseImages(caseId: number): Promise<CaseImage[]>;
-  getCaseImage(id: number): Promise<CaseImage | undefined>;
+  getCaseImages(caseId: number, userId: number): Promise<CaseImage[]>;
+  getCaseImage(id: number, userId: number): Promise<CaseImage | undefined>;
   createCaseImage(image: InsertCaseImage): Promise<CaseImage>;
-  deleteImage(id: number): Promise<void>;
+  deleteImage(id: number, userId: number): Promise<void>;
 
   // Case document operations
-  getCaseDocuments(caseId: number): Promise<CaseDocument[]>;
-  getCaseDocument(id: number): Promise<CaseDocument | undefined>;
+  getCaseDocuments(caseId: number, userId: number): Promise<CaseDocument[]>;
+  getCaseDocument(id: number, userId: number): Promise<CaseDocument | undefined>;
   createCaseDocument(document: InsertCaseDocument): Promise<CaseDocument>;
-  deleteDocument(id: number): Promise<void>;
+  deleteDocument(id: number, userId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
-  async getCases(): Promise<Case[]> {
-    return db.select().from(cases);
-  }
-
-  async getCase(id: number): Promise<Case | undefined> {
+  async getUser(id: number): Promise<User | undefined> {
     if (!Number.isInteger(id) || id < 1) {
       return undefined;
     }
-    const [case_] = await db.select().from(cases).where(eq(cases.id, id));
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const timestamp = new Date().toISOString();
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        ...user,
+        createdAt: timestamp,
+      })
+      .returning();
+    return newUser;
+  }
+
+  async getCases(userId: number): Promise<Case[]> {
+    if (!Number.isInteger(userId) || userId < 1) {
+      return [];
+    }
+    return db.select().from(cases).where(eq(cases.userId, userId));
+  }
+
+  async getCase(id: number, userId: number): Promise<Case | undefined> {
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(userId) || userId < 1) {
+      return undefined;
+    }
+    const [case_] = await db
+      .select()
+      .from(cases)
+      .where(and(eq(cases.id, id), eq(cases.userId, userId)));
     return case_;
   }
 
   async createCase(caseData: InsertCase): Promise<Case> {
+    if (!Number.isInteger(caseData.userId) || caseData.userId < 1) {
+      throw new Error("Invalid user ID");
+    }
     const timestamp = new Date().toISOString();
     const [newCase] = await db
       .insert(cases)
@@ -58,9 +104,9 @@ export class DatabaseStorage implements IStorage {
     return newCase;
   }
 
-  async updateCase(id: number, data: Partial<Case>): Promise<Case> {
-    if (!Number.isInteger(id) || id < 1) {
-      throw new Error("Invalid case ID");
+  async updateCase(id: number, userId: number, data: Partial<Case>): Promise<Case> {
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(userId) || userId < 1) {
+      throw new Error("Invalid case or user ID");
     }
     const [updatedCase] = await db
       .update(cases)
@@ -68,7 +114,7 @@ export class DatabaseStorage implements IStorage {
         ...data,
         updatedAt: new Date().toISOString(),
       })
-      .where(eq(cases.id, id))
+      .where(and(eq(cases.id, id), eq(cases.userId, userId)))
       .returning();
 
     if (!updatedCase) {
@@ -77,31 +123,33 @@ export class DatabaseStorage implements IStorage {
     return updatedCase;
   }
 
-  async deleteCase(id: number): Promise<void> {
-    if (!Number.isInteger(id) || id < 1) {
-      throw new Error("Invalid case ID");
+  async deleteCase(id: number, userId: number): Promise<void> {
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(userId) || userId < 1) {
+      throw new Error("Invalid case or user ID");
     }
-    await db.delete(cases).where(eq(cases.id, id));
+    await db
+      .delete(cases)
+      .where(and(eq(cases.id, id), eq(cases.userId, userId)));
   }
 
-  async getCaseInfo(caseId: number): Promise<CaseInfo[]> {
-    if (!Number.isInteger(caseId) || caseId < 1) {
+  async getCaseInfo(caseId: number, userId: number): Promise<CaseInfo[]> {
+    if (!Number.isInteger(caseId) || caseId < 1 || !Number.isInteger(userId) || userId < 1) {
       return [];
     }
     const results = await db
       .select()
       .from(caseInfo)
-      .where(eq(caseInfo.caseId, caseId));
+      .where(and(eq(caseInfo.caseId, caseId), eq(caseInfo.userId, userId)));
     
-    return results.map(info => ({
+    return results.map((info: any) => ({
       ...info,
       data: JSON.parse(info.data as string)
     }));
   }
 
   async createCaseInfo(info: InsertCaseInfo): Promise<CaseInfo> {
-    if (!Number.isInteger(info.caseId) || info.caseId < 1) {
-      throw new Error("Invalid case ID");
+    if (!Number.isInteger(info.caseId) || info.caseId < 1 || !Number.isInteger(info.userId) || info.userId < 1) {
+      throw new Error("Invalid case or user ID");
     }
 
     const timestamp = new Date().toISOString();
@@ -116,31 +164,31 @@ export class DatabaseStorage implements IStorage {
     return newInfo;
   }
 
-  async getCaseImages(caseId: number): Promise<CaseImage[]> {
-    if (!Number.isInteger(caseId) || caseId < 1) {
+  async getCaseImages(caseId: number, userId: number): Promise<CaseImage[]> {
+    if (!Number.isInteger(caseId) || caseId < 1 || !Number.isInteger(userId) || userId < 1) {
       return [];
     }
     return db
       .select()
       .from(caseImages)
-      .where(eq(caseImages.caseId, caseId))
+      .where(and(eq(caseImages.caseId, caseId), eq(caseImages.userId, userId)))
       .orderBy(caseImages.uploadedAt);
   }
 
-  async getCaseImage(id: number): Promise<CaseImage | undefined> {
-    if (!Number.isInteger(id) || id < 1) {
+  async getCaseImage(id: number, userId: number): Promise<CaseImage | undefined> {
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(userId) || userId < 1) {
       return undefined;
     }
     const [image] = await db
       .select()
       .from(caseImages)
-      .where(eq(caseImages.id, id));
+      .where(and(eq(caseImages.id, id), eq(caseImages.userId, userId)));
     return image;
   }
 
   async createCaseImage(image: InsertCaseImage): Promise<CaseImage> {
-    if (!Number.isInteger(image.caseId) || image.caseId < 1) {
-      throw new Error("Invalid case ID");
+    if (!Number.isInteger(image.caseId) || image.caseId < 1 || !Number.isInteger(image.userId) || image.userId < 1) {
+      throw new Error("Invalid case or user ID");
     }
 
     const [newImage] = await db
@@ -153,38 +201,40 @@ export class DatabaseStorage implements IStorage {
     return newImage;
   }
 
-  async deleteImage(id: number): Promise<void> {
-    if (!Number.isInteger(id) || id < 1) {
-      throw new Error("Invalid image ID");
+  async deleteImage(id: number, userId: number): Promise<void> {
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(userId) || userId < 1) {
+      throw new Error("Invalid image or user ID");
     }
-    await db.delete(caseImages).where(eq(caseImages.id, id));
+    await db
+      .delete(caseImages)
+      .where(and(eq(caseImages.id, id), eq(caseImages.userId, userId)));
   }
 
-  async getCaseDocuments(caseId: number): Promise<CaseDocument[]> {
-    if (!Number.isInteger(caseId) || caseId < 1) {
+  async getCaseDocuments(caseId: number, userId: number): Promise<CaseDocument[]> {
+    if (!Number.isInteger(caseId) || caseId < 1 || !Number.isInteger(userId) || userId < 1) {
       return [];
     }
     return db
       .select()
       .from(caseDocuments)
-      .where(eq(caseDocuments.caseId, caseId))
+      .where(and(eq(caseDocuments.caseId, caseId), eq(caseDocuments.userId, userId)))
       .orderBy(caseDocuments.uploadedAt);
   }
 
-  async getCaseDocument(id: number): Promise<CaseDocument | undefined> {
-    if (!Number.isInteger(id) || id < 1) {
+  async getCaseDocument(id: number, userId: number): Promise<CaseDocument | undefined> {
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(userId) || userId < 1) {
       return undefined;
     }
     const [document] = await db
       .select()
       .from(caseDocuments)
-      .where(eq(caseDocuments.id, id));
+      .where(and(eq(caseDocuments.id, id), eq(caseDocuments.userId, userId)));
     return document;
   }
 
   async createCaseDocument(document: InsertCaseDocument): Promise<CaseDocument> {
-    if (!Number.isInteger(document.caseId) || document.caseId < 1) {
-      throw new Error("Invalid case ID");
+    if (!Number.isInteger(document.caseId) || document.caseId < 1 || !Number.isInteger(document.userId) || document.userId < 1) {
+      throw new Error("Invalid case or user ID");
     }
 
     const [newDocument] = await db
@@ -198,11 +248,13 @@ export class DatabaseStorage implements IStorage {
     return newDocument;
   }
 
-  async deleteDocument(id: number): Promise<void> {
-    if (!Number.isInteger(id) || id < 1) {
-      throw new Error("Invalid document ID");
+  async deleteDocument(id: number, userId: number): Promise<void> {
+    if (!Number.isInteger(id) || id < 1 || !Number.isInteger(userId) || userId < 1) {
+      throw new Error("Invalid document or user ID");
     }
-    await db.delete(caseDocuments).where(eq(caseDocuments.id, id));
+    await db
+      .delete(caseDocuments)
+      .where(and(eq(caseDocuments.id, id), eq(caseDocuments.userId, userId)));
   }
 }
 

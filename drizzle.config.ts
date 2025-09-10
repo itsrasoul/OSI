@@ -7,7 +7,7 @@ const DATA_DIR = isProduction ? '/data' : './data';
 export default {
   schema: "./shared/schema.ts",
   out: "./drizzle",
-  driver: 'better-sqlite',
+  dialect: 'sqlite',
   dbCredentials: {
     url: process.env.DATABASE_URL || resolve(DATA_DIR, 'db.sqlite')
   },

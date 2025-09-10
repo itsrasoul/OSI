@@ -1,7 +1,7 @@
 import { Express } from "express";
 import { createServer } from "http";
 import { storage as dbStorage } from "./storage";
-import { insertCaseSchema, insertCaseInfoSchema } from "@shared/schema";
+import { insertCaseSchema, insertCaseInfoSchema, insertUserSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs/promises";
@@ -9,6 +9,9 @@ import express from 'express';
 import rateLimit from 'express-rate-limit';
 import sanitize from 'sanitize-filename';
 import sharp from 'sharp';
+import passport from "./auth";
+import bcrypt from "bcrypt";
+import type { Request, Response, NextFunction } from "express";
 
 const UPLOAD_DIR = './uploads';
 const THUMBNAIL_DIR = './uploads/thumbnails';
@@ -99,19 +102,100 @@ async function cleanupFiles(files: string[]) {
   }
 }
 
-// Initialize upload directories
-ensureDirectories();
+// Middleware to check if user is authenticated
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ message: "Authentication required" });
+}
+
+// Get current user
+function getCurrentUser(req: Request): any {
+  return req.user;
+}
 
 export async function registerRoutes(app: Express) {
+  // Auth routes
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const result = insertUserSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid user data" });
+      }
+
+      const { username, email, password } = result.data;
+
+      // Check if user already exists
+      const existingUser = await dbStorage.getUserByUsername(username) || await dbStorage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username or email already exists" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const user = await dbStorage.createUser({
+        username,
+        email,
+        password: hashedPassword,
+      });
+
+      // Remove password from response
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/login", (req, res, next) => {
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.status(401).json({ message: info.message });
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+        const { password, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+      });
+    })(req, res, next);
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (req.isAuthenticated()) {
+      const { password, ...userWithoutPassword } = req.user as any;
+      res.json(userWithoutPassword);
+    } else {
+      res.status(401).json({ message: "Not authenticated" });
+    }
+  });
   // Cases endpoints
-  app.get("/api/cases", async (_req, res) => {
-    const cases = await dbStorage.getCases();
+  app.get("/api/cases", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
+    const cases = await dbStorage.getCases(user.id);
     res.json(cases);
   });
 
-  app.get("/api/cases/:id", async (req, res) => {
+  app.get("/api/cases/:id", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const id = parseInt(req.params.id);
-    const case_ = await dbStorage.getCase(id);
+    const case_ = await dbStorage.getCase(id, user.id);
     if (!case_) {
       res.status(404).json({ message: "Case not found" });
       return;
@@ -119,52 +203,57 @@ export async function registerRoutes(app: Express) {
     res.json(case_);
   });
 
-  app.post("/api/cases", async (req, res) => {
+  app.post("/api/cases", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const result = insertCaseSchema.safeParse(req.body);
     if (!result.success) {
       res.status(400).json({ message: "Invalid case data" });
       return;
     }
-    const newCase = await dbStorage.createCase(result.data);
+    const newCase = await dbStorage.createCase({ ...result.data, userId: user.id });
     res.json(newCase);
   });
 
-  app.patch("/api/cases/:id", async (req, res) => {
+  app.patch("/api/cases/:id", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const id = parseInt(req.params.id);
     const { status, priority } = req.body;
 
-    const case_ = await dbStorage.getCase(id);
+    const case_ = await dbStorage.getCase(id, user.id);
     if (!case_) {
       res.status(404).json({ message: "Case not found" });
       return;
     }
 
-    const updatedCase = await dbStorage.updateCase(id, { status, priority });
+    const updatedCase = await dbStorage.updateCase(id, user.id, { status, priority });
     res.json(updatedCase);
   });
 
-  app.delete("/api/cases/:id", async (req, res) => {
+  app.delete("/api/cases/:id", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const id = parseInt(req.params.id);
-    const case_ = await dbStorage.getCase(id);
+    const case_ = await dbStorage.getCase(id, user.id);
     if (!case_) {
       res.status(404).json({ message: "Case not found" });
       return;
     }
 
-    await dbStorage.deleteCase(id);
+    await dbStorage.deleteCase(id, user.id);
     res.status(204).end();
   });
 
   // Case info endpoints
-  app.get("/api/cases/:id/info", async (req, res) => {
+  app.get("/api/cases/:id/info", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const caseId = parseInt(req.params.id);
-    const info = await dbStorage.getCaseInfo(caseId);
+    const info = await dbStorage.getCaseInfo(caseId, user.id);
     res.json(info);
   });
 
-  app.post("/api/cases/:id/info", async (req, res) => {
+  app.post("/api/cases/:id/info", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const caseId = parseInt(req.params.id);
-    const result = insertCaseInfoSchema.safeParse({ ...req.body, caseId });
+    const result = insertCaseInfoSchema.safeParse({ ...req.body, caseId, userId: user.id });
     if (!result.success) {
       res.status(400).json({ message: "Invalid info data" });
       return;
@@ -174,13 +263,15 @@ export async function registerRoutes(app: Express) {
   });
 
   // Image handling endpoints
-  app.get("/api/cases/:id/images", async (req, res) => {
+  app.get("/api/cases/:id/images", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const caseId = parseInt(req.params.id);
-    const images = await dbStorage.getCaseImages(caseId);
+    const images = await dbStorage.getCaseImages(caseId, user.id);
     res.json(images);
   });
 
-  app.post("/api/cases/images/upload", limiter, upload.single('image'), async (req, res) => {
+  app.post("/api/cases/images/upload", requireAuth, limiter, upload.single('image'), async (req, res) => {
+    const user = getCurrentUser(req);
     const filesToCleanup: string[] = [];
     
     try {
@@ -192,7 +283,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Check number of existing images for this case
-      const existingImages = await dbStorage.getCaseImages(caseId);
+      const existingImages = await dbStorage.getCaseImages(caseId, user.id);
       if (existingImages.length >= MAX_FILES_PER_CASE) {
         throw new Error(`Maximum number of files (${MAX_FILES_PER_CASE}) reached for this case`);
       }
@@ -205,6 +296,7 @@ export async function registerRoutes(app: Express) {
 
       // Create image record
       const image = await dbStorage.createCaseImage({
+        userId: user.id,
         caseId,
         fileName: file.filename,
         fileSize: file.size,
@@ -230,10 +322,11 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/cases/images/:id", limiter, async (req, res) => {
+  app.delete("/api/cases/images/:id", requireAuth, limiter, async (req, res) => {
+    const user = getCurrentUser(req);
     try {
       const imageId = parseInt(req.params.id);
-      const image = await dbStorage.getCaseImage(imageId);
+      const image = await dbStorage.getCaseImage(imageId, user.id);
 
       if (!image) {
         res.status(404).json({ message: "Image not found" });
@@ -250,7 +343,7 @@ export async function registerRoutes(app: Express) {
       ]);
 
       // Delete from database
-      await dbStorage.deleteImage(imageId);
+      await dbStorage.deleteImage(imageId, user.id);
       res.status(204).end();
     } catch (error) {
       console.error('Delete error:', error);
@@ -262,7 +355,8 @@ export async function registerRoutes(app: Express) {
   });
 
   // Case image upload endpoint
-  app.post("/api/cases/:id/image", upload.single('image'), async (req, res) => {
+  app.post("/api/cases/:id/image", requireAuth, upload.single('image'), async (req, res) => {
+    const user = getCurrentUser(req);
     const id = parseInt(req.params.id);
     const file = req.file;
 
@@ -271,7 +365,7 @@ export async function registerRoutes(app: Express) {
       return;
     }
 
-    const case_ = await dbStorage.getCase(id);
+    const case_ = await dbStorage.getCase(id, user.id);
     if (!case_) {
       res.status(404).json({ message: "Case not found" });
       return;
@@ -288,18 +382,20 @@ export async function registerRoutes(app: Express) {
     }
 
     const imageUrl = `/uploads/cases/${file.filename}`;
-    const updatedCase = await dbStorage.updateCase(id, { imageUrl });
+    const updatedCase = await dbStorage.updateCase(id, user.id, { imageUrl });
     res.json(updatedCase);
   });
 
   // Document handling endpoints
-  app.get("/api/cases/:id/documents", async (req, res) => {
+  app.get("/api/cases/:id/documents", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     const caseId = parseInt(req.params.id);
-    const documents = await dbStorage.getCaseDocuments(caseId);
+    const documents = await dbStorage.getCaseDocuments(caseId, user.id);
     res.json(documents);
   });
 
-  app.post("/api/cases/documents/upload", limiter, upload.single('document'), async (req, res) => {
+  app.post("/api/cases/documents/upload", requireAuth, limiter, upload.single('document'), async (req, res) => {
+    const user = getCurrentUser(req);
     const filesToCleanup: string[] = [];
     
     try {
@@ -311,7 +407,7 @@ export async function registerRoutes(app: Express) {
       }
 
       // Check number of existing documents for this case
-      const existingDocuments = await dbStorage.getCaseDocuments(caseId);
+      const existingDocuments = await dbStorage.getCaseDocuments(caseId, user.id);
       if (existingDocuments.length >= MAX_FILES_PER_CASE) {
         throw new Error(`Maximum number of files (${MAX_FILES_PER_CASE}) reached for this case`);
       }
@@ -320,6 +416,7 @@ export async function registerRoutes(app: Express) {
 
       // Create document record
       const document = await dbStorage.createCaseDocument({
+        userId: user.id,
         caseId,
         fileName: file.filename,
         fileSize: file.size,
@@ -341,10 +438,11 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.delete("/api/cases/documents/:id", async (req, res) => {
+  app.delete("/api/cases/documents/:id", requireAuth, async (req, res) => {
+    const user = getCurrentUser(req);
     try {
       const documentId = parseInt(req.params.id);
-      const document = await dbStorage.getCaseDocument(documentId);
+      const document = await dbStorage.getCaseDocument(documentId, user.id);
       
       if (!document) {
         res.status(404).json({ message: "Document not found" });
@@ -358,7 +456,7 @@ export async function registerRoutes(app: Express) {
         console.error('Failed to delete document file:', e);
       }
 
-      await dbStorage.deleteDocument(documentId);
+      await dbStorage.deleteDocument(documentId, user.id);
       res.json({ success: true });
     } catch (error) {
       console.error('Document deletion error:', error);

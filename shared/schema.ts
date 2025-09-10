@@ -2,8 +2,17 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const users = sqliteTable("users", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
 export const cases = sqliteTable("cases", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   name: text("name").notNull(),
   description: text("description").notNull(),
   status: text("status").notNull().default("active"),
@@ -15,6 +24,7 @@ export const cases = sqliteTable("cases", {
 
 export const caseInfo = sqliteTable("case_info", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   caseId: integer("case_id").notNull(),
   category: text("category").notNull(),
   data: text("data").notNull(), // Store JSON as text in SQLite
@@ -27,6 +37,7 @@ export const caseInfo = sqliteTable("case_info", {
 // New table for storing case images
 export const caseImages = sqliteTable("case_images", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   caseId: integer("case_id").notNull(),
   fileName: text("file_name").notNull(),
   fileSize: integer("file_size").notNull(),
@@ -40,6 +51,7 @@ export const caseImages = sqliteTable("case_images", {
 // New table for storing case documents
 export const caseDocuments = sqliteTable("case_documents", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
   caseId: integer("case_id").notNull(),
   fileName: text("file_name").notNull(),
   fileSize: integer("file_size").notNull(),
@@ -48,6 +60,9 @@ export const caseDocuments = sqliteTable("case_documents", {
   description: text("description"),
   uploadedAt: text("uploaded_at").notNull(),
 });
+
+export const insertUserSchema = createInsertSchema(users)
+  .omit({ createdAt: true });
 
 export const insertCaseSchema = createInsertSchema(cases)
   .omit({ createdAt: true, updatedAt: true });
@@ -64,6 +79,8 @@ export const insertCaseImageSchema = createInsertSchema(caseImages)
 export const insertCaseDocumentSchema = createInsertSchema(caseDocuments)
   .omit({ uploadedAt: true });
 
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
 export type InsertCase = z.infer<typeof insertCaseSchema>;
 export type Case = typeof cases.$inferSelect;
 export type InsertCaseInfo = z.infer<typeof insertCaseInfoSchema>;

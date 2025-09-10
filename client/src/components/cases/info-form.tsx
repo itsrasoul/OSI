@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 import { ImageGallery } from "./image-gallery";
 import { DocumentGallery } from "./document-gallery";
 import { AddressMap } from "./address-map";
@@ -31,6 +32,7 @@ type FormData = {
 };
 
 export default function InfoForm({ caseId, category }: InfoFormProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   
@@ -43,12 +45,15 @@ export default function InfoForm({ caseId, category }: InfoFormProps) {
 
   const createInfo = useMutation({
     mutationFn: async (values: FormData) => {
+      if (!user) throw new Error("User not authenticated");
+
       const data = category in infoTypes ? {
         ...values.data,
         ...(selectedLocation && { coordinates: `${selectedLocation.lat},${selectedLocation.lng}` })
       } : { content: values.rawText };
       
       const info: InsertCaseInfo = {
+        userId: user.id,
         caseId,
         category,
         data,
