@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export default defineConfig({
-  base: import.meta.env.VITE_BASE || '/',
+  base: process.env.VITE_BASE || '/',
   server: {
     hmr: {
       overlay: false
